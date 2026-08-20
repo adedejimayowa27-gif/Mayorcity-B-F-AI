@@ -1,0 +1,270 @@
+:root{
+  /* Restrained, modern fintech palette — one accent, mostly neutral */
+  --ink:#12151c;
+  --ink-soft:#4b5262;
+  --paper:#f7f8fa;
+  --panel:#ffffff;
+
+  --accent:#0f6e5c;      /* deep emerald — finance/trust, not loud */
+  --accent-soft:#e6f2ef;
+  --accent-strong:#0b5646;
+
+  --line:#e4e6eb;
+  --line-soft:#eef0f3;
+  --muted:#767c8a;
+
+  --user-bubble:#12151c;
+  --user-bubble-text:#ffffff;
+  --bot-bubble:#ffffff;
+
+  --radius:10px;
+  --radius-lg:14px;
+
+  --shadow-sm: 0 1px 2px rgba(18,21,28,0.06);
+  --shadow-md: 0 6px 20px rgba(18,21,28,0.08);
+
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  --vh: 1vh;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  min-height: calc(var(--vh, 1vh) * 100);
+  background: var(--paper);
+  font-family:var(--sans);
+  color:var(--ink);
+  display:flex;
+  flex-direction:column;
+  -webkit-font-smoothing:antialiased;
+}
+
+a{color:var(--accent);}
+
+header{
+  background: var(--panel);
+  color:var(--ink);
+  padding: clamp(16px, 4vw, 24px) clamp(16px, 5vw, 28px) 16px;
+  border-bottom: 1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+.brand .mark{
+  font-family:var(--sans);
+  font-weight:800;
+  font-size: 18px;
+  line-height:1;
+  color: var(--panel);
+  background: var(--ink);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.brand h1{
+  font-family:var(--sans);
+  font-size: clamp(17px, 4.6vw, 21px);
+  font-weight:700;
+  margin:0;
+  letter-spacing:-0.2px;
+}
+.tagline{
+  margin:8px 0 0;
+  font-size: clamp(12px, 3.4vw, 13.5px);
+  color:var(--ink-soft);
+  max-width: 640px;
+}
+.scope-bar{
+  display:flex; gap:7px; flex-wrap:wrap; margin-top:14px;
+}
+.chip{
+  font-size:11px;
+  letter-spacing:0.2px;
+  padding:5px 11px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  color:var(--ink-soft);
+  background: var(--paper);
+}
+.chip.core{
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  font-weight:600;
+}
+
+main{
+  flex:1;
+  display:flex;
+  justify-content:center;
+  min-height:0;
+}
+.chat-shell{
+  width:100%;
+  max-width:860px;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  padding:0 clamp(10px, 3vw, 18px);
+}
+.messages{
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling: touch;
+  padding:22px 4px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  scroll-behavior:smooth;
+}
+.msg{
+  max-width:84%;
+  padding:12px 15px;
+  border-radius:var(--radius);
+  line-height:1.55;
+  font-size:15px;
+  white-space:pre-wrap;
+  box-shadow:var(--shadow-sm);
+}
+.msg.user{
+  align-self:flex-end;
+  background: var(--user-bubble);
+  color:var(--user-bubble-text);
+  border-bottom-right-radius:3px;
+}
+.msg.bot{
+  align-self:flex-start;
+  background:var(--bot-bubble);
+  border:1px solid var(--line);
+  border-bottom-left-radius:3px;
+}
+.msg.bot .src{
+  display:block;
+  margin-top:10px;
+  padding-top:8px;
+  border-top:1px dashed var(--line);
+  font-size:11.5px;
+  color:var(--accent-strong);
+  font-weight:600;
+}
+.msg.system-note{
+  align-self:center;
+  background:transparent;
+  color:var(--muted);
+  font-size:12.5px;
+  font-style:italic;
+  box-shadow:none;
+  padding:2px 8px;
+}
+.typing{
+  align-self:flex-start;
+  display:flex; gap:6px; align-items:center;
+  padding:12px 16px;
+  background:var(--bot-bubble);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  border-bottom-left-radius:3px;
+  box-shadow:var(--shadow-sm);
+}
+.dot{width:6px; height:6px; border-radius:50%; background: var(--accent); opacity:0.35; animation:blink 1.2s infinite;}
+.dot:nth-child(2){animation-delay:0.2s;}
+.dot:nth-child(3){animation-delay:0.4s;}
+@keyframes blink{0%,80%,100%{opacity:0.3;} 40%{opacity:1;}}
+
+.composer{
+  padding: 12px 4px calc(18px + env(safe-area-inset-bottom, 0px));
+  display:flex;
+  gap:10px;
+  align-items:flex-end;
+  border-top:1px solid var(--line);
+  background: var(--paper);
+}
+.composer textarea{
+  flex:1;
+  resize:none;
+  font-family:var(--sans);
+  font-size:15px;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1.5px solid var(--line);
+  background:var(--panel);
+  color:var(--ink);
+  min-height:46px;
+  max-height:140px;
+  line-height:1.4;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.composer textarea:focus{
+  outline:none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.send-btn{
+  background: var(--ink);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  padding:0 20px;
+  height:46px;
+  font-size:14px;
+  font-weight:600;
+  letter-spacing:0.2px;
+  cursor:pointer;
+  transition: opacity 0.12s ease;
+  flex-shrink:0;
+}
+.send-btn:hover:not(:disabled){opacity:0.85;}
+.send-btn:disabled{opacity:0.4; cursor:default;}
+
+.empty-state{
+  margin:auto;
+  text-align:center;
+  color:var(--muted);
+  max-width:520px;
+  padding: clamp(20px, 6vw, 34px) 12px;
+}
+.empty-state .glyph{
+  font-weight:800; font-size:34px;
+  color: var(--accent);
+  margin-bottom:8px;
+}
+.empty-state h2{color:var(--ink); font-size: clamp(17px, 4.6vw, 20px); margin:4px 0 8px; font-weight:700;}
+.empty-state p{font-size: clamp(13px, 3.6vw, 14px); line-height:1.65;}
+.suggestions{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:18px;}
+.sugg{
+  font-size:12.5px;
+  padding:9px 13px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:var(--panel);
+  cursor:pointer;
+  color:var(--ink);
+  font-weight:600;
+  transition: all 0.15s ease;
+}
+.sugg:hover{border-color:var(--accent); color:var(--accent-strong);}
+
+footer.app-footer{
+  text-align:center;
+  font-size:11px;
+  color:var(--muted);
+  padding: 6px 10px 10px;
+}
+
+::-webkit-scrollbar{width:9px;}
+::-webkit-scrollbar-thumb{background: var(--line); border-radius:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+@media (max-width: 520px){
+  header{padding: 14px 14px 16px;}
+  .scope-bar{gap:6px;}
+  .chip{font-size:10px; padding:4px 9px;}
+  .msg{max-width:90%; font-size:14.5px;}
+  .composer{padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));}
+  .send-btn{padding:0 16px; font-size:13px;}
+}
+
+@media (max-width: 360px){
+  .brand h1{font-size:16px;}
+  .empty-state{padding:16px 6px;}
+}

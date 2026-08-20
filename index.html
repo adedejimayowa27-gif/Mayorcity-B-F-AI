@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<meta name="description" content="Mayorcity B&amp;F AI — an AI study assistant for Banking &amp; Finance, grounded in your course packs (Digital Banking, Banking Law, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, Monetary Policy).">
+<meta name="theme-color" content="#12151c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%B0%3C/text%3E%3C/svg%3E">
+<title>Mayorcity B&amp;F AI — Banking &amp; Finance Study Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">MB</span>
+    <h1>Mayorcity B&amp;F AI</h1>
+  </div>
+  <p class="tagline">Mayorcity's personal banking &amp; finance assistant — grounded in your course packs.</p>
+  <div class="scope-bar">
+    <span class="chip core">Digital Banking</span>
+    <span class="chip core">Banking Law &amp; Practice</span>
+    <span class="chip core">Finance in Global Markets</span>
+    <span class="chip core">Risk &amp; Fintech</span>
+    <span class="chip">Mathematics of Finance</span>
+    <span class="chip">Monetary Policy</span>
+  </div>
+</header>
+
+<main>
+  <div class="chat-shell">
+    <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Conversation">
+      <div class="empty-state" id="emptyState">
+        <div class="glyph" aria-hidden="true">MB</div>
+        <h2>Ask about anything in your study packs</h2>
+        <p>Digital banking, fintech, law of banking, ERM, ethics &amp; governance, accounting, insurance, economics, mathematics of finance, monetary policy and more — answers are grounded in the documents you've supplied, with banking &amp; finance as the specialism.</p>
+        <div class="suggestions">
+          <div class="sugg" data-q="Explain the difference between online banking and digital banking with examples.">Online vs. digital banking</div>
+          <div class="sugg" data-q="What are the three lines of defense in risk management? Give an example for each.">3 lines of defense</div>
+          <div class="sugg" data-q="Summarize the key duties of a bank's Chief Risk Officer regarding liquidity risk.">CRO &amp; liquidity risk</div>
+          <div class="sugg" data-q="How does the Central Bank use the Monetary Policy Rate (MPR) to control inflation?">MPR &amp; inflation</div>
+          <div class="sugg" data-q="Explain simple interest vs compound interest with a worked example.">Simple vs. compound interest</div>
+          <div class="sugg" data-q="What did the February 2026 examiners' report say students struggled with?">Examiners' report insights</div>
+        </div>
+      </div>
+    </div>
+    <div class="composer">
+      <textarea id="input" placeholder="Ask a question about your course material…" rows="1" aria-label="Type your question"></textarea>
+      <button class="send-btn" id="sendBtn" aria-label="Send question">Ask</button>
+    </div>
+  </div>
+</main>
+<footer class="app-footer">Mayorcity B&amp;F AI can make mistakes — always verify against your official study pack.</footer>
+
+<script src="js/kb.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
