@@ -7,19 +7,33 @@
 <meta name="theme-color" content="#101B33">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%B0%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23E0BD4B'/%3E%3Cstop offset='1' stop-color='%239C7A1B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='22' cy='22' r='21' fill='url(%23g)' stroke='%230A1224' stroke-width='1.5'/%3E%3Ctext x='22' y='29' font-family='Georgia,serif' font-weight='700' font-size='17' fill='%23101B33' text-anchor='middle'%3EMB%3C/text%3E%3C/svg%3E">
 <title>Mayorcity B&amp;F AI — Banking &amp; Finance Study Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <span class="mark" aria-hidden="true">MB</span>
-    <h1>Mayorcity B&amp;F AI</h1>
+<header id="appHeader">
+  <div class="brand-row">
+    <div class="brand">
+      <svg class="mark-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+        <defs>
+          <linearGradient id="brassGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#E0BD4B"/>
+            <stop offset="1" stop-color="#9C7A1B"/>
+          </linearGradient>
+        </defs>
+        <circle cx="22" cy="22" r="20.5" fill="url(#brassGrad)" stroke="#0A1224" stroke-width="1.2"/>
+        <circle cx="22" cy="22" r="20.5" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+        <text x="22" y="27.5" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="16" fill="#101B33" text-anchor="middle" letter-spacing="-0.5">MB</text>
+        <line x1="11" y1="31.5" x2="33" y2="31.5" stroke="#101B33" stroke-width="1" opacity="0.45"/>
+      </svg>
+      <h1>Mayorcity B&amp;F AI</h1>
+    </div>
+    <button id="newChatBtn" class="new-chat-btn" type="button">New chat</button>
   </div>
   <p class="tagline">Mayorcity's personal banking &amp; finance assistant — grounded in your course packs.</p>
   <div class="scope-bar">
@@ -36,7 +50,18 @@
   <div class="chat-shell">
     <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Conversation">
       <div class="empty-state" id="emptyState">
-        <div class="glyph" aria-hidden="true">MB</div>
+        <svg class="glyph-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+          <defs>
+            <linearGradient id="brassGrad2" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#E0BD4B"/>
+              <stop offset="1" stop-color="#9C7A1B"/>
+            </linearGradient>
+          </defs>
+          <circle cx="22" cy="22" r="20.5" fill="url(#brassGrad2)" stroke="#0A1224" stroke-width="1.2"/>
+          <circle cx="22" cy="22" r="20.5" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1"/>
+          <text x="22" y="27.5" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="16" fill="#101B33" text-anchor="middle" letter-spacing="-0.5">MB</text>
+          <line x1="11" y1="31.5" x2="33" y2="31.5" stroke="#101B33" stroke-width="1" opacity="0.45"/>
+        </svg>
         <h2>Ask about anything in your study packs</h2>
         <p>Digital banking, fintech, law of banking, ERM, ethics &amp; governance, accounting, insurance, economics, mathematics of finance, monetary policy and more — answers are grounded in the documents you've supplied, with banking &amp; finance as the specialism.</p>
         <div class="suggestions">
