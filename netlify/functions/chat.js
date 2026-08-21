@@ -3,7 +3,7 @@
 // Set GEMINI_API_KEY in your Netlify site's Environment Variables (Site settings → Environment variables).
 // Get a key at https://aistudio.google.com/apikey
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
