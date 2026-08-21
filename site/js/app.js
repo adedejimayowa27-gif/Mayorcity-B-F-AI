@@ -49,14 +49,21 @@ Rules:
 - If a question is a past exam MCQ, explain the reasoning for the correct answer rather than only stating a letter.
 - Stay encouraging and exam-focused, like a knowledgeable tutor, not a generic chatbot.
 - Format with light markdown, since this interface renders it: use **bold** for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Do NOT use tables, links, code blocks for prose, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.
-- For any mathematical or financial FORMULA (interest, present/future value, ratios, etc.), wrap the whole formula in single backticks so it renders in a proper formula style, and use plain-ASCII notation inside: "^" for exponents (e.g. \`FV = PV(1+r)^n\`), "_" for subscripts (e.g. \`FV_n\`), and "×" and "÷" instead of "*" and "/". Keep formulas on their own line, separate from surrounding prose.`;
+- For any mathematical or financial FORMULA (interest, present/future value, ratios, etc.), wrap the whole formula in single backticks so it renders in a proper formula style, and use plain-ASCII notation inside: "^" for exponents (e.g. \`FV = PV(1+r)^n\`), "_" for subscripts (e.g. \`FV_n\`), and "×" and "÷" instead of "*" and "/". Keep formulas on their own line, separate from surrounding prose.
+- If an ATTACHED DOCUMENT is provided below, it was uploaded by the student just for this conversation (not part of their permanent study packs). Treat it as authoritative for this session: answer questions about it directly, and if asked to generate practice questions, a summary, or a quiz from it, base that entirely on its actual content rather than inventing material.`;
 
-function buildSystemPrompt(contextChunks){
+function buildSystemPrompt(contextChunks, attachedText, attachedName){
+  let prompt = SYSTEM_BASE;
   if(contextChunks.length === 0){
-    return SYSTEM_BASE + "\n\nCONTEXT EXCERPTS: (none matched this question — answer from general banking/finance knowledge and say the study packs didn't have a clear match.)";
+    prompt += "\n\nCONTEXT EXCERPTS: (none matched this question — answer from general banking/finance knowledge and say the study packs didn't have a clear match.)";
+  } else {
+    const blocks = contextChunks.map(c => `[Source: ${c.source} — ${c.subject}]\n${c.text}`).join("\n\n---\n\n");
+    prompt += "\n\nCONTEXT EXCERPTS:\n\n" + blocks;
   }
-  const blocks = contextChunks.map(c => `[Source: ${c.source} — ${c.subject}]\n${c.text}`).join("\n\n---\n\n");
-  return SYSTEM_BASE + "\n\nCONTEXT EXCERPTS:\n\n" + blocks;
+  if(attachedText){
+    prompt += `\n\nATTACHED DOCUMENT (temporary, this session only — filename: "${attachedName}"):\n\n${attachedText}`;
+  }
+  return prompt;
 }
 
 /* ---------- Mobile viewport height fix ---------- */
@@ -130,6 +137,12 @@ const sendBtn = document.getElementById('sendBtn');
 const emptyState = document.getElementById('emptyState');
 const headerEl = document.getElementById('appHeader');
 const newChatBtn = document.getElementById('newChatBtn');
+const attachBtn = document.getElementById('attachBtn');
+const fileInput = document.getElementById('fileInput');
+const attachRow = document.getElementById('attachRow');
+const attachName = document.getElementById('attachName');
+const attachStatus = document.getElementById('attachStatus');
+const attachRemove = document.getElementById('attachRemove');
 
 let history = [];       // {role, content} sent to the API
 let transcript = [];    // {role, text, sources} persisted to localStorage for display
@@ -232,6 +245,92 @@ function removeTyping(){
   if(t) t.remove();
 }
 
+/* ---------- Attach-a-file (temporary, this session only) ---------- */
+const PDFJS_VERSION = '6.1.200';
+let attachedFile = null; // { name, text }
+let pdfjsLibPromise = null;
+
+function loadPdfJs(){
+  if(!pdfjsLibPromise){
+    pdfjsLibPromise = import(`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.mjs`).then(mod => {
+      mod.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`;
+      return mod;
+    });
+  }
+  return pdfjsLibPromise;
+}
+
+async function extractPdfText(file){
+  const pdfjsLib = await loadPdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  let text = '';
+  const maxPages = Math.min(pdf.numPages, 60);
+  for(let i = 1; i <= maxPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(it => it.str).join(' ') + '\n\n';
+    if(text.length > 30000) break;
+  }
+  return text.trim();
+}
+
+const ATTACH_CHAR_LIMIT = 9000;
+const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15MB
+
+function setAttachRow(name, statusText, isError){
+  attachRow.hidden = false;
+  attachName.textContent = name;
+  attachStatus.textContent = statusText || '';
+  attachRow.classList.toggle('attach-error', !!isError);
+}
+function clearAttachment(){
+  attachedFile = null;
+  attachRow.hidden = true;
+  attachRow.classList.remove('attach-error');
+  fileInput.value = '';
+}
+
+async function handleFileSelected(file){
+  if(!file) return;
+  if(file.size > MAX_FILE_BYTES){
+    setAttachRow(file.name, 'Too large (max 15MB)', true);
+    attachedFile = null;
+    return;
+  }
+  setAttachRow(file.name, 'Reading…', false);
+  try{
+    let text;
+    const lower = file.name.toLowerCase();
+    if(lower.endsWith('.pdf')){
+      text = await extractPdfText(file);
+    } else {
+      text = await file.text();
+    }
+    text = (text || '').trim();
+    if(!text){
+      setAttachRow(file.name, 'No readable text found (scanned image?)', true);
+      attachedFile = null;
+      return;
+    }
+    let truncated = false;
+    if(text.length > ATTACH_CHAR_LIMIT){
+      text = text.slice(0, ATTACH_CHAR_LIMIT);
+      truncated = true;
+    }
+    attachedFile = { name: file.name, text };
+    setAttachRow(file.name, truncated ? 'Attached (truncated to fit)' : 'Attached', false);
+  }catch(err){
+    console.error(err);
+    setAttachRow(file.name, 'Could not read this file', true);
+    attachedFile = null;
+  }
+}
+
+attachBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => handleFileSelected(fileInput.files[0]));
+attachRemove.addEventListener('click', clearAttachment);
+
 async function ask(question){
   if(!question || !question.trim()) return;
   const q = question.trim();
@@ -244,7 +343,7 @@ async function ask(question){
   addTyping();
 
   const chunks = retrieve(q, 9);
-  const system = buildSystemPrompt(chunks);
+  const system = buildSystemPrompt(chunks, attachedFile && attachedFile.text, attachedFile && attachedFile.name);
   const sourceEntries = chunks.map(c => ({
     source: c.source,
     excerpt: (c.text || '').replace(/\s+/g, ' ').trim().slice(0, 260)
@@ -341,6 +440,7 @@ newChatBtn.addEventListener('click', () => {
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   document.querySelectorAll('.chip.active').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-pressed','false'); });
   activeSubjects.clear();
+  clearAttachment();
   messagesEl.innerHTML = '';
   messagesEl.appendChild(emptyState);
   emptyState.style.display = '';
