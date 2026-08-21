@@ -6,7 +6,7 @@
 ├── netlify.toml              # tells Netlify where the site and functions live
 ├── netlify/
 │   └── functions/
-│       └── chat.js           # backend proxy that calls the Anthropic API (keeps your key secret)
+│       └── chat.js           # backend proxy that calls the Google Gemini API (keeps your key secret)
 └── site/                     # this is what gets published
     ├── index.html            # markup only
     ├── css/
@@ -39,10 +39,14 @@
 ## Deploying
 
 1. Push this whole folder to a Git repo (or drag-and-drop the folder into Netlify's dashboard).
-2. In Netlify: **Site settings → Environment variables** → add `ANTHROPIC_API_KEY` with your key.
+2. In Netlify: **Site settings → Environment variables** → add `GEMINI_API_KEY` with a key from
+   [Google AI Studio](https://aistudio.google.com/apikey). Set the "Secret" checkbox, and use
+   "Same value for all deploy contexts" unless you specifically want different keys per context.
 3. Netlify will read `netlify.toml` automatically: it publishes `site/` and deploys
    `netlify/functions/chat.js` as `/.netlify/functions/chat`.
 4. No build step is required — it's plain HTML/CSS/JS.
+5. Optional: set `GEMINI_MODEL` too if you want a model other than the default
+   (`gemini-2.5-flash`).
 
 ## Local testing
 
@@ -52,5 +56,5 @@ If you have the [Netlify CLI](https://docs.netlify.com/cli/get-started/) install
 netlify dev
 ```
 
-This serves `site/` and runs the function locally (with your `ANTHROPIC_API_KEY` set in a local
+This serves `site/` and runs the function locally (with your `GEMINI_API_KEY` set in a local
 `.env` file), so `/.netlify/functions/chat` works exactly like in production.
