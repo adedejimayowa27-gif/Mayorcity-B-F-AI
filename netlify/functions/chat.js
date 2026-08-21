@@ -4,6 +4,10 @@
 // Get a key at https://console.groq.com/keys
 
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+// Groq's vision-capable lineup changes often; qwen/qwen3.6-27b is current as of Aug 2026 but is a
+// PREVIEW model (Groq can discontinue preview models at short notice). If image attachments start
+// failing, check https://console.groq.com/docs/vision for the current model and update this.
+const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
@@ -25,17 +29,34 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: JSON.stringify({ error: "Invalid JSON body." }) };
   }
 
-  const { system, messages } = payload;
+  const { system, messages, image } = payload;
   if (!Array.isArray(messages) || messages.length === 0) {
     return { statusCode: 400, body: JSON.stringify({ error: "messages[] is required." }) };
   }
 
-  // Groq's API is OpenAI-compatible: system prompt is just the first message in the array,
-  // and roles are already "user"/"assistant" (matches what the frontend sends).
-  const chatMessages = [
-    ...(system ? [{ role: "system", content: system }] : []),
-    ...messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "") }))
-  ];
+  // Build the OpenAI-compatible message list. Every turn is plain text except the final
+  // (current) user turn, which becomes a multimodal [text, image_url] array if an image
+  // was attached — Groq (like OpenAI) only expects image content on the turns that have one.
+  const chatMessages = [];
+  if (system) chatMessages.push({ role: "system", content: system });
+
+  messages.forEach((m, i) => {
+    const role = m.role === "assistant" ? "assistant" : "user";
+    const isLast = i === messages.length - 1;
+    if (image && isLast && role === "user") {
+      chatMessages.push({
+        role: "user",
+        content: [
+          { type: "text", text: String(m.content || "") },
+          { type: "image_url", image_url: { url: image } }
+        ]
+      });
+    } else {
+      chatMessages.push({ role, content: String(m.content || "") });
+    }
+  });
+
+  const model = image ? GROQ_VISION_MODEL : GROQ_MODEL;
 
   try {
     const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -45,7 +66,7 @@ exports.handler = async function (event) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
+        model: model,
         messages: chatMessages,
         max_completion_tokens: 1500
       })
@@ -56,13 +77,12 @@ exports.handler = async function (event) {
     if (!resp.ok) {
       return {
         statusCode: resp.status,
-        body: JSON.stringify({ error: data?.error?.message || "Groq API error." })
+        body: JSON.stringify({ error: data?.error?.message || `Groq API error (model: ${model}).` })
       };
     }
 
     const text = (data?.choices?.[0]?.message?.content || "").trim();
 
-    // Normalize to the same { content: [{ text }] } shape app.js already expects.
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
