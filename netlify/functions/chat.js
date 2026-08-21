@@ -1,20 +1,20 @@
 // netlify/functions/chat.js
-// Proxies chat requests to the Google Gemini API so the API key never reaches the browser.
-// Set GEMINI_API_KEY in your Netlify site's Environment Variables (Site settings → Environment variables).
-// Get a key at https://aistudio.google.com/apikey
+// Proxies chat requests to the Groq API (OpenAI-compatible) so the API key never reaches the browser.
+// Set GROQ_API_KEY in your Netlify site's Environment Variables (Site settings → Environment variables).
+// Get a key at https://console.groq.com/keys
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "GEMINI_API_KEY is not set on the server." })
+      body: JSON.stringify({ error: "GROQ_API_KEY is not set on the server." })
     };
   }
 
@@ -30,26 +30,24 @@ exports.handler = async function (event) {
     return { statusCode: 400, body: JSON.stringify({ error: "messages[] is required." }) };
   }
 
-  // Gemini's chat format differs from Anthropic's: roles are "user"/"model" (not
-  // "assistant"), and every turn's text goes inside a parts[] array.
-  const contents = messages.map(m => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: String(m.content || "") }]
-  }));
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  // Groq's API is OpenAI-compatible: system prompt is just the first message in the array,
+  // and roles are already "user"/"assistant" (matches what the frontend sends).
+  const chatMessages = [
+    ...(system ? [{ role: "system", content: system }] : []),
+    ...messages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "") }))
+  ];
 
   try {
-    const resp = await fetch(url, {
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
+        "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        system_instruction: system ? { parts: [{ text: system }] } : undefined,
-        contents,
-        generationConfig: { maxOutputTokens: 1500 }
+        model: GROQ_MODEL,
+        messages: chatMessages,
+        max_completion_tokens: 1500
       })
     });
 
@@ -58,37 +56,22 @@ exports.handler = async function (event) {
     if (!resp.ok) {
       return {
         statusCode: resp.status,
-        body: JSON.stringify({ error: data?.error?.message || "Gemini API error." })
+        body: JSON.stringify({ error: data?.error?.message || "Groq API error." })
       };
     }
 
-    const candidate = data?.candidates?.[0];
-    const parts = candidate?.content?.parts || [];
-    const text = parts.map(p => p.text || "").join("").trim();
+    const text = (data?.choices?.[0]?.message?.content || "").trim();
 
-    if (!text) {
-      // Gemini blocked or returned nothing — surface why if it told us.
-      const reason = candidate?.finishReason;
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: [{ text: reason ? `The model couldn't answer that (reason: ${reason}). Try rephrasing the question.` : "Sorry, I couldn't generate a response." }]
-        })
-      };
-    }
-
-    // Normalize to the same { content: [{ text }] } shape app.js already expects,
-    // so nothing on the frontend has to change.
+    // Normalize to the same { content: [{ text }] } shape app.js already expects.
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: [{ text }] })
+      body: JSON.stringify({ content: [{ text: text || "Sorry, I couldn't generate a response." }] })
     };
   } catch (err) {
     return {
       statusCode: 502,
-      body: JSON.stringify({ error: "Failed to reach Gemini API: " + err.message })
+      body: JSON.stringify({ error: "Failed to reach Groq API: " + err.message })
     };
   }
 };
