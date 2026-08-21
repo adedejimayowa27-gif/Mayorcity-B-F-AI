@@ -247,7 +247,11 @@ function removeTyping(){
 }
 
 /* ---------- Attach-a-file (temporary, this session only) ---------- */
-const PDFJS_VERSION = '6.1.200';
+// Pinned to an older PDF.js release deliberately: 6.x's worker bundle requires Promise.try,
+// a JS feature only broadly supported in browsers since ~Jan 2025, which breaks on plenty of
+// real devices with a cryptic "Promise.try is not a function" error. 4.3.136 is well-tested,
+// still ESM (.mjs) compatible, and doesn't hit that wall.
+const PDFJS_VERSION = '4.3.136';
 let attachedFile = null; // { name, type: 'text'|'image', text? , dataUrl? }
 let pdfjsLibPromise = null;
 
