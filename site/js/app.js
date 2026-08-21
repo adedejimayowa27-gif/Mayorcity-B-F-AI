@@ -37,7 +37,7 @@ Rules:
 - Prioritize accuracy and clarity over length. Use short paragraphs or bullet points. Define key terms simply, then build up.
 - If a question is a past exam MCQ, explain the reasoning for the correct answer rather than only stating a letter.
 - Stay encouraging and exam-focused, like a knowledgeable tutor, not a generic chatbot.
-- Output PLAIN TEXT ONLY — this interface renders your reply as-is with no markdown support. Never use **bold**, ### headers, backticks, or --- dividers. For emphasis, just write the word plainly or use CAPS sparingly. For lists, start each line with "- " or a number like "1. " — nothing fancier. For a section break, use a blank line, not a rule.`;
+- Format with light markdown, since this interface renders it: use **bold** for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Do NOT use tables, links, code blocks, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.`;
 
 function buildSystemPrompt(contextChunks){
   if(contextChunks.length === 0){
@@ -55,11 +55,59 @@ setVH();
 window.addEventListener('resize', setVH);
 window.addEventListener('orientationchange', setVH);
 
+/* ---------- Light markdown renderer (bold, headers, lists, dividers) ---------- */
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function inlineFormat(s){
+  return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+function formatText(raw){
+  const lines = raw.replace(/\r\n/g,'\n').split('\n');
+  let html = '';
+  let listType = null;
+  function closeList(){
+    if(listType){ html += listType === 'ul' ? '</ul>' : '</ol>'; listType = null; }
+  }
+  for(const rawLine of lines){
+    const line = rawLine.trim();
+    if(line === ''){ closeList(); continue; }
+    if(/^#{1,4}\s+/.test(line)){
+      closeList();
+      html += `<div class="ans-h">${inlineFormat(escapeHtml(line.replace(/^#{1,4}\s+/, '')))}</div>`;
+      continue;
+    }
+    if(/^(-{3,}|\*{3,})$/.test(line)){
+      closeList();
+      html += '<hr class="ans-rule">';
+      continue;
+    }
+    const bullet = line.match(/^[-*]\s+(.*)/);
+    if(bullet){
+      if(listType !== 'ul'){ closeList(); html += '<ul>'; listType = 'ul'; }
+      html += `<li>${inlineFormat(escapeHtml(bullet[1]))}</li>`;
+      continue;
+    }
+    const numbered = line.match(/^\d+[.)]\s+(.*)/);
+    if(numbered){
+      if(listType !== 'ol'){ closeList(); html += '<ol>'; listType = 'ol'; }
+      html += `<li>${inlineFormat(escapeHtml(numbered[1]))}</li>`;
+      continue;
+    }
+    closeList();
+    html += `<p>${inlineFormat(escapeHtml(line))}</p>`;
+  }
+  closeList();
+  return html;
+}
+
 /* ---------- DOM refs ---------- */
 const messagesEl = document.getElementById('messages');
 const inputEl = document.getElementById('input');
 const sendBtn = document.getElementById('sendBtn');
 const emptyState = document.getElementById('emptyState');
+const headerEl = document.getElementById('appHeader');
+const newChatBtn = document.getElementById('newChatBtn');
 
 let history = [];
 
@@ -67,7 +115,11 @@ function addMsg(role, text, sources){
   if(emptyState) emptyState.style.display = 'none';
   const div = document.createElement('div');
   div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-  div.textContent = text;
+  if(role === 'user'){
+    div.textContent = text;
+  } else {
+    div.innerHTML = formatText(text);
+  }
   if(sources && sources.length){
     const s = document.createElement('span');
     s.className = 'src';
@@ -151,4 +203,26 @@ inputEl.addEventListener('input', () => {
 });
 document.querySelectorAll('.sugg').forEach(el => {
   el.addEventListener('click', () => ask(el.dataset.q));
+});
+
+/* ---------- Collapse header chips/tagline on scroll to give messages more room ---------- */
+let headerCollapsed = false;
+messagesEl.addEventListener('scroll', () => {
+  const shouldCollapse = messagesEl.scrollTop > 28;
+  if(shouldCollapse !== headerCollapsed){
+    headerCollapsed = shouldCollapse;
+    headerEl.classList.toggle('compact', headerCollapsed);
+  }
+});
+
+/* ---------- New chat ---------- */
+newChatBtn.addEventListener('click', () => {
+  history = [];
+  messagesEl.innerHTML = '';
+  messagesEl.appendChild(emptyState);
+  emptyState.style.display = '';
+  headerEl.classList.remove('compact');
+  headerCollapsed = false;
+  messagesEl.scrollTop = 0;
+  inputEl.focus();
 });
