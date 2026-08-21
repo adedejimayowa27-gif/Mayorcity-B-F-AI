@@ -50,7 +50,8 @@ Rules:
 - Stay encouraging and exam-focused, like a knowledgeable tutor, not a generic chatbot.
 - Format with light markdown, since this interface renders it: use **bold** for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Do NOT use tables, links, code blocks for prose, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.
 - For any mathematical or financial FORMULA (interest, present/future value, ratios, etc.), wrap the whole formula in single backticks so it renders in a proper formula style, and use plain-ASCII notation inside: "^" for exponents (e.g. \`FV = PV(1+r)^n\`), "_" for subscripts (e.g. \`FV_n\`), and "×" and "÷" instead of "*" and "/". Keep formulas on their own line, separate from surrounding prose.
-- If an ATTACHED DOCUMENT is provided below, it was uploaded by the student just for this conversation (not part of their permanent study packs). Treat it as authoritative for this session: answer questions about it directly, and if asked to generate practice questions, a summary, or a quiz from it, base that entirely on its actual content rather than inventing material.`;
+- If an ATTACHED DOCUMENT is provided below, it was uploaded by the student just for this conversation (not part of their permanent study packs). Treat it as authoritative for this session: answer questions about it directly, and if asked to generate practice questions, a summary, or a quiz from it, base that entirely on its actual content rather than inventing material.
+- If the student's message includes an attached image (e.g. a scanned textbook page, a diagram, a past-question screenshot, or handwritten workings), examine it carefully and ground your answer in what's actually shown — read any text in it, and reference specific parts of the image where relevant.`;
 
 function buildSystemPrompt(contextChunks, attachedText, attachedName){
   let prompt = SYSTEM_BASE;
@@ -247,7 +248,7 @@ function removeTyping(){
 
 /* ---------- Attach-a-file (temporary, this session only) ---------- */
 const PDFJS_VERSION = '6.1.200';
-let attachedFile = null; // { name, text }
+let attachedFile = null; // { name, type: 'text'|'image', text? , dataUrl? }
 let pdfjsLibPromise = null;
 
 function loadPdfJs(){
@@ -265,18 +266,55 @@ async function extractPdfText(file){
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data: buf}).promise;
   let text = '';
-  const maxPages = Math.min(pdf.numPages, 60);
+  const maxPages = Math.min(pdf.numPages, 80);
   for(let i = 1; i <= maxPages; i++){
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     text += content.items.map(it => it.str).join(' ') + '\n\n';
-    if(text.length > 30000) break;
+    if(text.length > 60000) break;
   }
   return text.trim();
 }
 
-const ATTACH_CHAR_LIMIT = 9000;
-const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15MB
+const ATTACH_CHAR_LIMIT = 20000;          // ~5k tokens of document text, safe for a 128k-context model
+const MAX_DOC_BYTES = 25 * 1024 * 1024;   // 25MB for PDF/txt/md
+const MAX_IMAGE_BYTES = 30 * 1024 * 1024; // 30MB raw upload — we compress it down before sending, see below
+const IMAGE_MAX_DIMENSION = 1600;         // longest side, px, after compression
+const IMAGE_JPEG_QUALITY = 0.82;
+
+function isImageFile(file){
+  return !!(file.type && file.type.startsWith('image/'));
+}
+
+/* Downscale + re-encode as JPEG client-side so even large phone photos fit comfortably
+   under Groq's request-size limits, instead of just hard-rejecting big files. */
+async function compressImage(file){
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Failed to read the image file'));
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('Could not decode this image'));
+    im.src = dataUrl;
+  });
+  let { width, height } = img;
+  if(width > IMAGE_MAX_DIMENSION || height > IMAGE_MAX_DIMENSION){
+    const scale = IMAGE_MAX_DIMENSION / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if(!ctx) throw new Error('Canvas not supported in this browser');
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', IMAGE_JPEG_QUALITY);
+}
 
 function setAttachRow(name, statusText, isError){
   attachRow.hidden = false;
@@ -290,16 +328,29 @@ function clearAttachment(){
   attachRow.classList.remove('attach-error');
   fileInput.value = '';
 }
+function describeError(err){
+  if(!err) return 'unknown error';
+  return err.message || err.name || String(err);
+}
 
 async function handleFileSelected(file){
   if(!file) return;
-  if(file.size > MAX_FILE_BYTES){
-    setAttachRow(file.name, 'Too large (max 15MB)', true);
+  const image = isImageFile(file);
+  const limit = image ? MAX_IMAGE_BYTES : MAX_DOC_BYTES;
+  if(file.size > limit){
+    setAttachRow(file.name, `Too large (max ${Math.round(limit / (1024*1024))}MB)`, true);
     attachedFile = null;
     return;
   }
-  setAttachRow(file.name, 'Reading…', false);
+
+  setAttachRow(file.name, image ? 'Processing image…' : 'Reading…', false);
   try{
+    if(image){
+      const dataUrl = await compressImage(file);
+      attachedFile = { name: file.name, type: 'image', dataUrl };
+      setAttachRow(file.name, 'Attached (image)', false);
+      return;
+    }
     let text;
     const lower = file.name.toLowerCase();
     if(lower.endsWith('.pdf')){
@@ -309,7 +360,7 @@ async function handleFileSelected(file){
     }
     text = (text || '').trim();
     if(!text){
-      setAttachRow(file.name, 'No readable text found (scanned image?)', true);
+      setAttachRow(file.name, 'No readable text found (scanned PDF with no text layer?)', true);
       attachedFile = null;
       return;
     }
@@ -318,11 +369,11 @@ async function handleFileSelected(file){
       text = text.slice(0, ATTACH_CHAR_LIMIT);
       truncated = true;
     }
-    attachedFile = { name: file.name, text };
+    attachedFile = { name: file.name, type: 'text', text };
     setAttachRow(file.name, truncated ? 'Attached (truncated to fit)' : 'Attached', false);
   }catch(err){
     console.error(err);
-    setAttachRow(file.name, 'Could not read this file', true);
+    setAttachRow(file.name, 'Could not read this file — ' + describeError(err), true);
     attachedFile = null;
   }
 }
@@ -343,7 +394,10 @@ async function ask(question){
   addTyping();
 
   const chunks = retrieve(q, 9);
-  const system = buildSystemPrompt(chunks, attachedFile && attachedFile.text, attachedFile && attachedFile.name);
+  const attachedText = attachedFile && attachedFile.type === 'text' ? attachedFile.text : null;
+  const attachedName = attachedFile && attachedFile.type === 'text' ? attachedFile.name : null;
+  const attachedImage = attachedFile && attachedFile.type === 'image' ? attachedFile.dataUrl : null;
+  const system = buildSystemPrompt(chunks, attachedText, attachedName);
   const sourceEntries = chunks.map(c => ({
     source: c.source,
     excerpt: (c.text || '').replace(/\s+/g, ' ').trim().slice(0, 260)
@@ -355,7 +409,8 @@ async function ask(question){
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         system: system,
-        messages: history.slice(-10)
+        messages: history.slice(-10),
+        image: attachedImage || undefined
       })
     });
     if(!resp.ok){
