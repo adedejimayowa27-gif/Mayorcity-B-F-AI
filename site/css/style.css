@@ -1,23 +1,23 @@
 :root{
-  /* Obsidian private-banking palette — charcoal depth, restrained champagne-gold accent */
-  --bg:#0B0C10;
-  --bg-deep:#07080B;
-  --surface: rgba(255,255,255,0.045);
-  --surface-strong: rgba(255,255,255,0.07);
-  --surface-user: #1B1D24;
+  /* Obsidian private-banking palette — warm charcoal depth, gold-tinted surfaces */
+  --bg:#121114;
+  --bg-deep:#0A090B;
+  --surface: rgba(201,166,107,0.05);
+  --surface-strong: rgba(201,166,107,0.095);
+  --surface-user: #1E1A15;
 
   --gold:#C9A66B;
   --gold-bright:#E4C68C;
   --gold-dim: rgba(201,166,107,0.5);
 
-  --text:#F1EFEA;
-  --text-soft:#A7ABB6;
-  --text-faint:#6C7180;
+  --text:#ECE6D9;
+  --text-soft:#B4AB9B;
+  --text-faint:#7C7669;
 
   --debit:#C97463;
 
-  --line: rgba(255,255,255,0.09);
-  --line-soft: rgba(255,255,255,0.05);
+  --line: rgba(201,166,107,0.11);
+  --line-soft: rgba(201,166,107,0.06);
   --line-gold: rgba(201,166,107,0.45);
   --line-gold-soft: rgba(201,166,107,0.22);
 
@@ -42,8 +42,8 @@ body{
   height: 100dvh;
   min-height: calc(var(--vh, 1vh) * 100);
   background:
-    radial-gradient(1100px 620px at 15% -8%, rgba(201,166,107,0.07), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(255,255,255,0.03), transparent 55%),
+    radial-gradient(1100px 620px at 15% -8%, rgba(201,166,107,0.09), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(201,166,107,0.04), transparent 55%),
     var(--bg);
   font-family:var(--sans);
   color:var(--text);
