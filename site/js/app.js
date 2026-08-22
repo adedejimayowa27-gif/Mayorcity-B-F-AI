@@ -76,6 +76,13 @@ setVH();
 window.addEventListener('resize', setVH);
 window.addEventListener('orientationchange', setVH);
 
+/* ---------- PWA install support (Android "Install app" / iOS "Add to Home Screen") ---------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.error('Service worker registration failed:', err));
+  });
+}
+
 /* ---------- Light markdown + formula renderer ---------- */
 function escapeHtml(s){
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
