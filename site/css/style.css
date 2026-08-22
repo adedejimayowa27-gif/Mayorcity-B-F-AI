@@ -1,25 +1,9 @@
 :root{
-  /* Obsidian private-banking palette — warm charcoal depth, gold-tinted surfaces */
-  --bg:#121114;
-  --bg-deep:#0A090B;
-  --surface: rgba(201,166,107,0.05);
-  --surface-strong: rgba(201,166,107,0.095);
-  --surface-user: #1E1A15;
-
+  /* Tokens shared by both themes */
   --gold:#C9A66B;
   --gold-bright:#E4C68C;
   --gold-dim: rgba(201,166,107,0.5);
-
-  --text:#ECE6D9;
-  --text-soft:#B4AB9B;
-  --text-faint:#7C7669;
-
   --debit:#C97463;
-
-  --line: rgba(201,166,107,0.11);
-  --line-soft: rgba(201,166,107,0.06);
-  --line-gold: rgba(201,166,107,0.45);
-  --line-gold-soft: rgba(201,166,107,0.22);
 
   --radius:12px;
   --radius-lg:18px;
@@ -32,8 +16,62 @@
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
 
-  /* Light "reading pane" tokens — used inside .messages so the conversation itself reads
-     like a clean professional document, while the header/composer chrome stays dark. */
+  --vh: 1vh;
+}
+
+/* ---------- Dark theme (default) ---------- */
+:root, [data-theme="dark"]{
+  /* Obsidian private-banking palette — warm charcoal depth, gold-tinted surfaces */
+  --bg:#121114;
+  --bg-deep:#0A090B;
+  --surface: rgba(201,166,107,0.05);
+  --surface-strong: rgba(201,166,107,0.095);
+  --surface-user: #221D2A;
+
+  --text:#ECE6D9;
+  --text-soft:#B4AB9B;
+  --text-faint:#7C7669;
+
+  --line: rgba(201,166,107,0.11);
+  --line-soft: rgba(201,166,107,0.06);
+  --line-gold: rgba(201,166,107,0.45);
+  --line-gold-soft: rgba(201,166,107,0.22);
+
+  /* Chat pane tokens — in dark mode the reading pane itself is dark, with fine
+     (high-legibility) light text, rather than switching to a light "paper" look. */
+  --paper:#18171B;
+  --card-bg:#1D1B20;
+  --ink:#ECE6D9;
+  --ink-soft:#B4AB9B;
+  --ink-faint:#8A8375;
+  --card-line: rgba(201,166,107,0.14);
+  --card-line-soft: rgba(201,166,107,0.07);
+  --card-surface: rgba(201,166,107,0.06);
+  --card-surface-strong: rgba(201,166,107,0.11);
+  --gold-on-paper:#D7B37C;
+  --gold-on-paper-bright:#E4C68C;
+  --line-gold-on-paper: rgba(201,166,107,0.45);
+  --line-gold-on-paper-soft: rgba(201,166,107,0.22);
+}
+
+/* ---------- Light theme ---------- */
+[data-theme="light"]{
+  --bg:#F4EFE2;
+  --bg-deep:#EAE2CC;
+  --surface: rgba(36,31,23,0.04);
+  --surface-strong: rgba(36,31,23,0.075);
+  --surface-user: #EAE0C6;
+
+  --text:#241F17;
+  --text-soft:#6B6255;
+  --text-faint:#9A9184;
+
+  --line: rgba(36,31,23,0.10);
+  --line-soft: rgba(36,31,23,0.05);
+  --line-gold: rgba(138,107,34,0.4);
+  --line-gold-soft: rgba(138,107,34,0.18);
+
+  /* Chat pane tokens — the light "reading pane" look. */
   --paper:#F1EBDC;
   --card-bg:#FFFFFF;
   --ink:#241F17;
@@ -47,8 +85,6 @@
   --gold-on-paper-bright:#7A5D16;
   --line-gold-on-paper: rgba(138,107,34,0.4);
   --line-gold-on-paper-soft: rgba(138,107,34,0.18);
-
-  --vh: 1vh;
 }
 
 *{box-sizing:border-box;}
@@ -98,6 +134,7 @@ header{
 .mark-svg{
   width:42px; height:42px;
   flex-shrink:0;
+  transition: width 0.2s ease, height 0.2s ease;
 }
 .brand h1{
   font-family:var(--display);
@@ -107,6 +144,7 @@ header{
   margin:0;
   letter-spacing:0.1px;
   color: var(--text);
+  transition: font-size 0.2s ease;
 }
 .new-chat-btn{
   font-family:var(--sans);
@@ -123,6 +161,38 @@ header{
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .new-chat-btn:hover{ background: var(--surface-strong); border-color: var(--line-gold); color: var(--gold-bright); }
+
+.header-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.icon-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  width:38px; height:38px;
+  padding:0;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background: var(--surface);
+  color:var(--text-soft);
+  cursor:pointer;
+  flex-shrink:0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.icon-btn:hover{ background: var(--surface-strong); border-color: var(--line-gold); color: var(--gold-bright); }
+.icon-btn:focus-visible{ outline: 2px solid var(--gold-bright); outline-offset:2px; }
+
+.theme-toggle-btn .icon-sun, .theme-toggle-btn .icon-moon{ display:none; }
+[data-theme="dark"] .theme-toggle-btn .icon-sun{ display:block; }
+[data-theme="light"] .theme-toggle-btn .icon-moon{ display:block; }
+
+.install-btn{
+  width:auto;
+  padding:0 14px 0 12px;
+  font-family:var(--sans);
+  font-size:12px;
+  font-weight:600;
+}
+.install-btn-label{ letter-spacing:0.1px; }
 .tagline{
   margin:10px 0 0;
   font-size: clamp(12.5px, 3.4vw, 14px);
@@ -141,9 +211,15 @@ header{
   overflow:hidden;
   transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
 }
-header.compact{ padding-bottom:15px; }
+header{ transition: padding 0.2s ease; }
+header.compact{ padding: 10px clamp(14px, 4vw, 28px) 10px; }
 header.compact .tagline{ max-height:0; opacity:0; margin-top:0; }
 header.compact .scope-bar{ max-height:0; opacity:0; margin-top:0; }
+header.compact .mark-svg{ width:26px; height:26px; transition: width 0.2s ease, height 0.2s ease; }
+header.compact .brand h1{ font-size:16px; transition: font-size 0.2s ease; }
+header.compact .new-chat-btn{ padding:6px 12px; font-size:11px; }
+header.compact .icon-btn{ width:32px; height:32px; }
+header.compact .install-btn{ padding:0 11px 0 10px; }
 
 .chip{
   font-family:var(--sans);
@@ -249,18 +325,8 @@ main{
 .msg.user{
   align-self:flex-end;
   background: var(--surface-user);
-  border: 1px solid rgba(201,166,107,0.22);
+  border: 1px solid var(--line-gold-on-paper-soft);
   border-radius: var(--radius) 4px var(--radius) var(--radius);
-  /* Opt back out of .messages' light-paper token scope — this bubble stays dark
-     regardless of the pane behind it, for contrast. */
-  --text:#ECE6D9;
-  --text-soft:#B4AB9B;
-  --text-faint:#8A8375;
-  --gold:#C9A66B;
-  --gold-bright:#E4C68C;
-  --line: rgba(201,166,107,0.22);
-  --line-gold: rgba(201,166,107,0.45);
-  --line-gold-soft: rgba(201,166,107,0.22);
   color: var(--text);
 }
 .msg.bot{
@@ -589,6 +655,10 @@ footer.app-footer{
   .send-btn{padding:0 20px; font-size:14px;}
   .mark-svg{width:36px; height:36px;}
   .new-chat-btn{font-size:11px; padding:7px 12px;}
+  .header-actions{gap:6px;}
+  .icon-btn{width:34px; height:34px;}
+  .install-btn-label{display:none;}
+  .install-btn{width:34px; padding:0;}
   .copy-btn{ font-size:9.5px; padding:3px 8px; }
   .msg .src-item{ font-size:11px; }
   .attach-btn{ width:44px; height:44px; font-size:15px; }
