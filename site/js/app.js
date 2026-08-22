@@ -48,7 +48,7 @@ Rules:
 - Prioritize accuracy and clarity over length. Use short paragraphs or bullet points. Define key terms simply, then build up.
 - If a question is a past exam MCQ, explain the reasoning for the correct answer rather than only stating a letter.
 - Stay encouraging and exam-focused, like a knowledgeable tutor, not a generic chatbot.
-- Format with light markdown, since this interface renders it: use **bold** for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Do NOT use tables, links, code blocks for prose, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.
+- Format with light markdown, since this interface renders it: use **bold** (double asterisks only) for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Never use single-asterisk emphasis like *this* — always double asterisks for anything bold, and plain text otherwise. Do NOT use tables, links, code blocks for prose, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.
 - For any mathematical or financial FORMULA (interest, present/future value, ratios, etc.), wrap the whole formula in single backticks so it renders in a proper formula style, and use plain-ASCII notation inside: "^" for exponents (e.g. \`FV = PV(1+r)^n\`), "_" for subscripts (e.g. \`FV_n\`), and "×" and "÷" instead of "*" and "/". Keep formulas on their own line, separate from surrounding prose.
 - If an ATTACHED DOCUMENT is provided below, it was uploaded by the student just for this conversation (not part of their permanent study packs). Treat it as authoritative for this session: answer questions about it directly, and if asked to generate practice questions, a summary, or a quiz from it, base that entirely on its actual content rather than inventing material.
 - If the student's message includes an attached image (e.g. a scanned textbook page, a diagram, a past-question screenshot, or handwritten workings), examine it carefully and ground your answer in what's actually shown — read any text in it, and reference specific parts of the image where relevant.`;
@@ -90,6 +90,7 @@ function formatFormulaInner(escaped){
 function inlineFormat(s){
   s = s.replace(/`([^`]+)`/g, (m, inner) => '<code class="fx">' + formatFormulaInner(inner) + '</code>');
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
   return s;
 }
 function formatText(raw){
@@ -144,6 +145,7 @@ const attachRow = document.getElementById('attachRow');
 const attachName = document.getElementById('attachName');
 const attachStatus = document.getElementById('attachStatus');
 const attachRemove = document.getElementById('attachRemove');
+const scrollBottomBtn = document.getElementById('scrollBottomBtn');
 
 let history = [];       // {role, content} sent to the API
 let transcript = [];    // {role, text, sources} persisted to localStorage for display
@@ -218,8 +220,13 @@ function addMsg(role, text, sources, opts){
     div.appendChild(wrap);
   }
 
+  const wasNearBottom = isNearBottom();
   messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  if(wasNearBottom){
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  } else if(role !== 'user'){
+    showScrollBtn(true);
+  }
 
   if(opts.record !== false){
     transcript.push({
@@ -232,14 +239,22 @@ function addMsg(role, text, sources, opts){
   return div;
 }
 
+function isNearBottom(){
+  return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
+}
+function showScrollBtn(show){
+  scrollBottomBtn.hidden = !show;
+}
+
 function addTyping(){
+  const wasNearBottom = isNearBottom();
   const div = document.createElement('div');
   div.className = 'typing';
   div.id = 'typingIndicator';
   div.setAttribute('aria-label', 'Assistant is typing');
   div.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
   messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  if(wasNearBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 function removeTyping(){
   const t = document.getElementById('typingIndicator');
@@ -386,11 +401,37 @@ attachBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => handleFileSelected(fileInput.files[0]));
 attachRemove.addEventListener('click', clearAttachment);
 
-async function ask(question){
+function clearRegenerateButtons(){
+  document.querySelectorAll('.regen-btn').forEach(b => b.remove());
+}
+function addRegenerateButton(div, question){
+  clearRegenerateButtons();
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'regen-btn';
+  btn.textContent = 'Regenerate';
+  btn.addEventListener('click', () => {
+    div.remove();
+    if(transcript.length && transcript[transcript.length - 1].role === 'bot'){
+      transcript.pop();
+      persist();
+    }
+    if(history.length && history[history.length - 1].role === 'assistant'){
+      history.pop();
+    }
+    ask(question, {isRegenerate: true});
+  });
+  div.appendChild(btn);
+}
+
+async function ask(question, opts){
+  opts = opts || {};
   if(!question || !question.trim()) return;
   const q = question.trim();
-  addMsg('user', q);
-  history.push({role:'user', content: q});
+  if(!opts.isRegenerate){
+    addMsg('user', q);
+    history.push({role:'user', content: q});
+  }
   inputEl.value = '';
   inputEl.style.height = 'auto';
   sendBtn.disabled = true;
@@ -426,8 +467,9 @@ async function ask(question){
     if(data && data.content){
       text = data.content.map(b => b.text || "").join("\n").trim() || text;
     }
-    addMsg('bot', text, sourceEntries);
+    const botDiv = addMsg('bot', text, sourceEntries);
     history.push({role:'assistant', content: text});
+    addRegenerateButton(botDiv, q);
   }catch(err){
     removeTyping();
     const errDiv = addMsg('bot', "Something went wrong reaching the model. Please check your connection and try again.", null, {record:false});
@@ -490,6 +532,11 @@ messagesEl.addEventListener('scroll', () => {
     headerCollapsed = shouldCollapse;
     headerEl.classList.toggle('compact', headerCollapsed);
   }
+  if(isNearBottom()) showScrollBtn(false);
+});
+scrollBottomBtn.addEventListener('click', () => {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  showScrollBtn(false);
 });
 
 /* ---------- New chat ---------- */
@@ -500,6 +547,7 @@ newChatBtn.addEventListener('click', () => {
   document.querySelectorAll('.chip.active').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-pressed','false'); });
   activeSubjects.clear();
   clearAttachment();
+  showScrollBtn(false);
   messagesEl.innerHTML = '';
   messagesEl.appendChild(emptyState);
   emptyState.style.display = '';
@@ -516,10 +564,16 @@ newChatBtn.addEventListener('click', () => {
     if(!raw) return;
     const saved = JSON.parse(raw);
     if(!Array.isArray(saved) || saved.length === 0) return;
+    let lastDiv = null;
     for(const entry of saved){
-      addMsg(entry.role, entry.text, entry.sources, {record:false});
+      lastDiv = addMsg(entry.role, entry.text, entry.sources, {record:false});
       history.push({role: entry.role === 'user' ? 'user' : 'assistant', content: entry.text});
     }
     transcript = saved;
+    const last = saved[saved.length - 1];
+    const prev = saved[saved.length - 2];
+    if(last && last.role === 'bot' && prev && prev.role === 'user' && lastDiv){
+      addRegenerateButton(lastDiv, prev.text);
+    }
   }catch(e){ /* corrupt or unavailable storage — start fresh */ }
 })();
