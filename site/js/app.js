@@ -76,12 +76,79 @@ setVH();
 window.addEventListener('resize', setVH);
 window.addEventListener('orientationchange', setVH);
 
-/* ---------- PWA install support (Android "Install app" / iOS "Add to Home Screen") ---------- */
+/* ---------- PWA install support (Android/desktop Chrome "Install app" / iOS "Add to Home Screen") ---------- */
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(err => console.error('Service worker registration failed:', err));
   });
 }
+
+(function setupInstallPrompt(){
+  const installBtn = document.getElementById('installBtn');
+  if(!installBtn) return;
+  let deferredPrompt = null;
+
+  const isStandalone = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  const isIos = () => /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+
+  if(isStandalone()){
+    installBtn.hidden = true;
+  } else if(isIos()){
+    /* iOS Safari never fires beforeinstallprompt — show a button that explains
+       the manual "Add to Home Screen" steps instead of a native prompt. */
+    installBtn.hidden = false;
+    installBtn.addEventListener('click', () => {
+      alert('To install: tap the Share icon in Safari, then "Add to Home Screen".');
+    });
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.hidden = false;
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if(!deferredPrompt) return;
+    installBtn.hidden = true;
+    deferredPrompt.prompt();
+    try{ await deferredPrompt.userChoice; }catch(e){ /* ignore */ }
+    deferredPrompt = null;
+  });
+
+  window.addEventListener('appinstalled', () => {
+    installBtn.hidden = true;
+    deferredPrompt = null;
+  });
+})();
+
+/* ---------- Dark / light theme toggle ---------- */
+(function setupThemeToggle(){
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const THEME_KEY = 'mb_theme';
+  const DARK_META = '#121114';
+  const LIGHT_META = '#F4EFE2';
+
+  function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme);
+    if(themeMeta) themeMeta.setAttribute('content', theme === 'light' ? LIGHT_META : DARK_META);
+    if(toggleBtn) toggleBtn.setAttribute('aria-label', theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+  }
+
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current);
+
+  if(!toggleBtn) return;
+  toggleBtn.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    try{ localStorage.setItem(THEME_KEY, next); }catch(e){ /* storage unavailable — ignore */ }
+  });
+})();
 
 /* ---------- Light markdown + formula renderer ---------- */
 function escapeHtml(s){
