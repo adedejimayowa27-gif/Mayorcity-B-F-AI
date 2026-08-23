@@ -368,6 +368,7 @@ main{
 }
 .copy-btn:hover{ background: var(--surface-strong); color:var(--text); }
 .copy-btn.copied{ color:var(--gold-bright); border-color: var(--line-gold); background: rgba(201,166,107,0.1); }
+.copy-btn.img-btn{ left:auto; right:16px; }
 
 .msg code.fx{
   display:inline-block;
@@ -394,6 +395,15 @@ main{
 }
 .msg .fx-katex .katex{ color: inherit; font-size:1.02em; }
 .msg.user .fx-katex{ background: rgba(255,255,255,0.06); border-color: var(--line); color: var(--text); }
+
+.msg .tbl-wrap{ margin:6px 0 14px; overflow-x:auto; border-radius:8px; border:1px solid var(--line-gold-soft); }
+.msg table.ans-table{ border-collapse:collapse; width:100%; font-size:0.92em; }
+.msg table.ans-table th, .msg table.ans-table td{ padding:8px 12px; text-align:left; border-bottom:1px solid var(--line); white-space:normal; }
+.msg table.ans-table th{ background:rgba(201,166,107,0.10); color:var(--gold-bright); font-weight:600; font-family:var(--sans); }
+.msg table.ans-table tr:last-child td{ border-bottom:none; }
+.msg table.ans-table tr:nth-child(even) td{ background:rgba(201,166,107,0.035); }
+.msg.user table.ans-table th{ background:rgba(255,255,255,0.08); color:var(--text); }
+.msg.user table.ans-table tr:nth-child(even) td{ background:rgba(255,255,255,0.04); }
 
 .msg .src-wrap{ margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
 .msg .src-toggle{
