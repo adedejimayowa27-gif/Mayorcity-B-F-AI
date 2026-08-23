@@ -26,64 +26,71 @@
   --bg-deep:#0A090B;
   --surface: rgba(201,166,107,0.05);
   --surface-strong: rgba(201,166,107,0.095);
-  --surface-user: #221D2A;
+  --surface-user: #2B2115;
+  --bubble-user-text: #EEDFB8;
 
-  --text:#ECE6D9;
-  --text-soft:#B4AB9B;
-  --text-faint:#7C7669;
+  --text:#E9DAB9;
+  --text-soft:#C3A97C;
+  --text-faint:#8C7A56;
 
   --line: rgba(201,166,107,0.11);
   --line-soft: rgba(201,166,107,0.06);
   --line-gold: rgba(201,166,107,0.45);
   --line-gold-soft: rgba(201,166,107,0.22);
 
-  /* Chat pane tokens — in dark mode the reading pane itself is dark, with fine
-     (high-legibility) light text, rather than switching to a light "paper" look. */
+  /* Chat pane tokens — in dark mode the reading pane itself is dark, with response text
+     in a warm, legible gold-cream rather than plain white, and headings in a brighter
+     antique-gold for hierarchy. */
   --paper:#18171B;
   --card-bg:#1D1B20;
-  --ink:#ECE6D9;
-  --ink-soft:#B4AB9B;
-  --ink-faint:#8A8375;
+  --ink:#EEDFB8;
+  --ink-soft:#C3A97C;
+  --ink-faint:#8C7A56;
   --card-line: rgba(201,166,107,0.14);
   --card-line-soft: rgba(201,166,107,0.07);
   --card-surface: rgba(201,166,107,0.06);
   --card-surface-strong: rgba(201,166,107,0.11);
-  --gold-on-paper:#D7B37C;
-  --gold-on-paper-bright:#E4C68C;
+  --gold-on-paper:#E4C68C;
+  --gold-on-paper-bright:#F3DBA6;
   --line-gold-on-paper: rgba(201,166,107,0.45);
   --line-gold-on-paper-soft: rgba(201,166,107,0.22);
 }
 
 /* ---------- Light theme ---------- */
 [data-theme="light"]{
-  --bg:#F4EFE2;
-  --bg-deep:#EAE2CC;
-  --surface: rgba(36,31,23,0.04);
-  --surface-strong: rgba(36,31,23,0.075);
-  --surface-user: #EAE0C6;
+  /* Ivory & bronze palette — warmer and cleaner than a flat inversion of the dark
+     theme, with its own contrast logic (a deep espresso "sent" bubble, a crisp
+     paper-white reading pane) rather than just swapping backgrounds for text colors. */
+  --bg:#FBF7EC;
+  --bg-deep:#F1E8D2;
+  --surface: rgba(36,29,20,0.035);
+  --surface-strong: rgba(36,29,20,0.07);
+  --surface-user: #241C13;
+  --bubble-user-text: #F1E2BE;
 
-  --text:#241F17;
-  --text-soft:#6B6255;
-  --text-faint:#9A9184;
+  --text:#211B12;
+  --text-soft:#6E6353;
+  --text-faint:#9C9280;
 
-  --line: rgba(36,31,23,0.10);
-  --line-soft: rgba(36,31,23,0.05);
-  --line-gold: rgba(138,107,34,0.4);
+  --line: rgba(36,29,20,0.11);
+  --line-soft: rgba(36,29,20,0.055);
+  --line-gold: rgba(138,107,34,0.42);
   --line-gold-soft: rgba(138,107,34,0.18);
 
-  /* Chat pane tokens — the light "reading pane" look. */
-  --paper:#F1EBDC;
+  /* Chat pane tokens — a crisp paper-white reading pane, subtly distinct from the
+     warm ivory chrome around it, with deep espresso body text and antique-gold accents. */
+  --paper:#FFFCF5;
   --card-bg:#FFFFFF;
-  --ink:#241F17;
-  --ink-soft:#6B6255;
-  --ink-faint:#9A9184;
-  --card-line: rgba(36,31,23,0.10);
-  --card-line-soft: rgba(36,31,23,0.05);
-  --card-surface: rgba(36,31,23,0.035);
-  --card-surface-strong: rgba(36,31,23,0.065);
+  --ink:#211B12;
+  --ink-soft:#6E6353;
+  --ink-faint:#9C9280;
+  --card-line: rgba(36,29,20,0.10);
+  --card-line-soft: rgba(36,29,20,0.05);
+  --card-surface: rgba(36,29,20,0.032);
+  --card-surface-strong: rgba(36,29,20,0.06);
   --gold-on-paper:#8A6B22;
-  --gold-on-paper-bright:#7A5D16;
-  --line-gold-on-paper: rgba(138,107,34,0.4);
+  --gold-on-paper-bright:#6E5115;
+  --line-gold-on-paper: rgba(138,107,34,0.42);
   --line-gold-on-paper-soft: rgba(138,107,34,0.18);
 }
 
@@ -103,7 +110,10 @@ body{
   flex-direction:column;
   -webkit-font-smoothing:antialiased;
   overflow:hidden;
+  opacity:0;
+  transition: opacity 0.25s ease;
 }
+body.loaded{ opacity:1; }
 
 @media (prefers-reduced-motion: no-preference){
   .msg{ animation: rise 0.3s cubic-bezier(.2,.8,.2,1) both; }
@@ -130,7 +140,8 @@ header{
   justify-content:space-between;
   gap:12px;
 }
-.brand{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-width:0;}
+.history-toggle-btn{ margin-right:2px; }
+.brand{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-width:0; flex:1;}
 .mark-svg{
   width:42px; height:42px;
   flex-shrink:0;
@@ -327,7 +338,7 @@ main{
   background: var(--surface-user);
   border: 1px solid var(--line-gold-on-paper-soft);
   border-radius: var(--radius) 4px var(--radius) var(--radius);
-  color: var(--text);
+  color: var(--bubble-user-text);
 }
 .msg.bot{
   align-self:flex-start;
@@ -371,6 +382,18 @@ main{
 }
 .msg.user code.fx{ background: rgba(255,255,255,0.06); border-color: var(--line); color: var(--text); }
 .msg code.fx sup, .msg code.fx sub{ font-size:0.72em; }
+
+.msg .fx-katex{
+  display:inline-block;
+  background: rgba(201,166,107,0.08);
+  border:1px solid var(--line-gold-soft);
+  color: var(--gold-bright);
+  border-radius:6px;
+  padding:5px 11px 3px;
+  margin:2px 0;
+}
+.msg .fx-katex .katex{ color: inherit; font-size:1.02em; }
+.msg.user .fx-katex{ background: rgba(255,255,255,0.06); border-color: var(--line); color: var(--text); }
 
 .msg .src-wrap{ margin-top:12px; padding-top:10px; border-top:1px solid var(--line); }
 .msg .src-toggle{
@@ -625,6 +648,132 @@ main{
 }
 .sugg:hover{ border-color: var(--gold); background: rgba(201,166,107,0.14); color: var(--gold-bright); }
 
+/* ---------- History sidebar ---------- */
+.sidebar-overlay{
+  position:fixed; inset:0;
+  background: rgba(0,0,0,0.45);
+  z-index:20;
+  opacity:0;
+  transition: opacity 0.2s ease;
+}
+.sidebar-overlay.open{ opacity:1; }
+.history-sidebar{
+  position:fixed;
+  top:0; left:0; bottom:0;
+  width: min(300px, 84vw);
+  background: var(--bg-deep);
+  border-right:1px solid var(--line);
+  z-index:21;
+  display:flex;
+  flex-direction:column;
+  padding: 16px 14px;
+  transform: translateX(-100%);
+  transition: transform 0.22s cubic-bezier(.2,.8,.2,1);
+  box-shadow: var(--shadow-md);
+}
+.history-sidebar.open{ transform: translateX(0); }
+.sidebar-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 2px 4px 14px;
+}
+.sidebar-title{
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:17px; color:var(--text);
+}
+.sidebar-new-chat{
+  font-family:var(--sans); font-weight:600; font-size:13px;
+  padding:10px 14px; border-radius:var(--radius);
+  border:1px solid var(--line-gold-soft);
+  background: rgba(201,166,107,0.07);
+  color: var(--gold-bright);
+  cursor:pointer; text-align:left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.sidebar-new-chat:hover{ background: rgba(201,166,107,0.13); border-color: var(--line-gold); }
+.conversation-list{
+  flex:1; overflow-y:auto; margin-top:12px; display:flex; flex-direction:column; gap:4px;
+}
+.conv-item{
+  display:flex; align-items:center; gap:8px;
+  padding:10px 10px; border-radius:var(--radius);
+  cursor:pointer; border:1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.conv-item:hover{ background: var(--surface); }
+.conv-item.active{ background: var(--surface-strong); border-color: var(--line-gold-soft); }
+.conv-item-title{
+  flex:1; min-width:0; font-family:var(--sans); font-size:13px; color:var(--text-soft);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.conv-item.active .conv-item-title{ color: var(--text); font-weight:600; }
+.conv-item-delete{
+  flex-shrink:0; border:none; background:none; color:var(--text-faint);
+  cursor:pointer; padding:3px 5px; font-size:14px; line-height:1; border-radius:6px;
+}
+.conv-item-delete:hover{ color: var(--debit); background: rgba(201,116,99,0.1); }
+.conv-empty-hint{ font-family:var(--sans); font-size:12.5px; color:var(--text-faint); padding:12px 8px; text-align:center; }
+.sidebar-footer{
+  display:flex; flex-direction:column; gap:6px;
+  padding-top:12px; border-top:1px solid var(--line-soft); margin-top:8px;
+}
+.sidebar-footer-btn{
+  font-family:var(--sans); font-size:12.5px; font-weight:600;
+  padding:9px 10px; border-radius:8px; text-align:left;
+  border:none; background:none; color: var(--text-soft); cursor:pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sidebar-footer-btn:hover{ background: var(--surface); color: var(--gold-bright); }
+
+/* ---------- About modal ---------- */
+.modal-overlay{
+  position:fixed; inset:0; z-index:30;
+  background: rgba(0,0,0,0.55);
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal{
+  position:relative;
+  max-width:440px; width:100%;
+  max-height:82vh; overflow-y:auto;
+  background: var(--card-bg);
+  border:1px solid var(--card-line);
+  border-radius: var(--radius-lg);
+  padding: 30px 26px 26px;
+  box-shadow: var(--shadow-md);
+  color: var(--ink);
+}
+.modal-close-btn{ position:absolute; top:12px; right:12px; }
+.modal-mark{ width:40px; height:40px; margin-bottom:10px; }
+.modal h2{
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:22px; margin:0 0 12px; color: var(--ink);
+}
+.modal h3{
+  font-family:var(--sans); font-size:11.5px; letter-spacing:0.4px; text-transform:uppercase;
+  color: var(--gold-on-paper); margin:18px 0 6px; font-weight:700;
+}
+.modal p{
+  font-family:var(--sans); font-size:13.5px; line-height:1.7; color: var(--ink-soft); margin:0;
+}
+.modal p strong{ color: var(--ink); }
+
+/* ---------- Message feedback ---------- */
+.msg .feedback-row{
+  display:inline-flex; align-items:center; gap:4px; margin-top:11px; margin-left:8px;
+}
+.feedback-btn{
+  border:1px solid var(--line); background:transparent; border-radius:8px;
+  width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; color: var(--text-faint);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.feedback-btn:hover{ border-color: var(--line-gold); color: var(--gold-bright); }
+.feedback-btn.selected.up{ background: rgba(120,180,120,0.14); border-color: rgba(120,180,120,0.4); color:#7FBF7F; }
+.feedback-btn.selected.down{ background: rgba(201,116,99,0.14); border-color: rgba(201,116,99,0.4); color: var(--debit); }
+.feedback-thanks{
+  font-family:var(--sans); font-size:11px; color: var(--text-faint); margin-left:4px;
+}
+
 footer.app-footer{
   text-align:center;
   font-family:var(--sans);
@@ -659,6 +808,8 @@ footer.app-footer{
   .icon-btn{width:34px; height:34px;}
   .install-btn-label{display:none;}
   .install-btn{width:34px; padding:0;}
+  .history-sidebar{ padding:14px 12px; }
+  .modal{ padding:24px 20px 20px; }
   .copy-btn{ font-size:9.5px; padding:3px 8px; }
   .msg .src-item{ font-size:11px; }
   .attach-btn{ width:44px; height:44px; font-size:15px; }
