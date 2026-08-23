@@ -546,7 +546,13 @@ function addMsg(role, text, sources, opts){
   const wasNearBottom = isNearBottom();
   messagesEl.appendChild(div);
   if(wasNearBottom){
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    if(role === 'user'){
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    } else {
+      // Reveal the start of the new answer instead of snapping straight to its end,
+      // so the person can read from the top and scroll down at their own pace.
+      div.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   } else if(role !== 'user'){
     showScrollBtn(true);
   }
