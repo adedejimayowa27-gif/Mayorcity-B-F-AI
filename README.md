@@ -3,18 +3,42 @@
 ## Project structure
 
 ```
-├── netlify.toml              # tells Netlify where the site and functions live
+├── netlify.toml              # tells Netlify where the site/functions live, security headers, 404 routing
 ├── netlify/
 │   └── functions/
-│       └── chat.js           # backend proxy that calls the Groq API (keeps your key secret)
+│       ├── chat.js           # backend proxy that calls the Groq API (keeps your key secret)
+│       └── feedback.js       # logs thumbs up/down votes on answers to the function logs
 └── site/                     # this is what gets published
     ├── index.html            # markup only
     ├── css/
-    │   └── style.css         # all styling
-    └── js/
-        ├── kb.js             # your embedded study-pack knowledge base (unchanged content)
-        └── app.js            # retrieval logic + chat UI logic
+    │   └── style.css         # all styling (dark/light themes as CSS variables)
+    ├── js/
+    │   ├── kb-parts/         # your embedded study-pack knowledge base, split into chunks
+    │   └── app.js            # retrieval logic + chat UI logic + conversation history
+    ├── icons/                # PWA/app icons
+    ├── manifest.json         # PWA manifest
+    ├── sw.js                 # service worker (offline fallback only, no aggressive caching)
+    ├── offline.html          # shown when the service worker detects no connection
+    ├── 404.html              # custom not-found page
+    ├── robots.txt / sitemap.xml   # replace REPLACE_WITH_YOUR_DOMAIN once you have a real domain
+    └── favicon.ico
 ```
+
+## Notable features
+
+- **Dark/light mode** — toggle in the header, remembers your choice, defaults to OS preference.
+- **Conversation history** — the hamburger icon (top-left) opens a sidebar of saved
+  conversations (stored in `localStorage`, per-browser — there's no account system, so history
+  doesn't sync across devices). "Export this chat" downloads the active conversation as a `.txt` file.
+- **About & founder** — in the sidebar footer; also baked into the assistant's system prompt so it
+  can answer "who built this?" accurately without volunteering it unprompted.
+- **Answer feedback** — thumbs up/down on each answer POST to `/.netlify/functions/feedback`,
+  which logs the vote (Netlify dashboard → your site → **Logs → Functions → feedback**). This is
+  a lightweight, no-database way to spot-check quality — swap the `console.log` in that file for a
+  real datastore if you want a proper dashboard later.
+- **Formulas** — rendered with [KaTeX](https://katex.org) (loaded from a CDN) for real math
+  typesetting, with a plain-text fallback if the CDN is unreachable.
+- **Keyboard shortcuts** — `Ctrl`/`Cmd`+`K` starts a new chat, `Esc` closes the sidebar or About modal.
 
 ## What changed from the single-file version
 
@@ -47,6 +71,10 @@
 4. No build step is required — it's plain HTML/CSS/JS.
 5. Optional: set `GROQ_MODEL` too if you want a model other than the default
    (`openai/gpt-oss-120b`).
+6. `feedback.js` needs no environment variables — it just logs to the function's own logs.
+7. Once you have a real deployed URL, replace `REPLACE_WITH_YOUR_DOMAIN` in
+   `site/robots.txt` and `site/sitemap.xml` with it (search-engine files, not required for the
+   app to work, but worth doing before you rely on organic search).
 
 ## Local testing
 
