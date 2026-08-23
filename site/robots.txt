@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Replace with your real deployed domain (see sitemap.xml for the same note).
-Sitemap: https://REPLACE_WITH_YOUR_DOMAIN/sitemap.xml
+Sitemap: https://mayorcitybandfai.netlify.app//sitemap.xml
