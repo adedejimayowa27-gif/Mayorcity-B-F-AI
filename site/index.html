@@ -21,17 +21,34 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="shortcut icon" href="favicon.ico">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Mayorcity B&amp;F AI — Banking &amp; Finance Study Assistant</title>
+
+<!-- Open Graph / Twitter card — used when this link is shared on social platforms -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mayorcity B&amp;F AI">
+<meta property="og:title" content="Mayorcity B&amp;F AI — Banking &amp; Finance Study Assistant">
+<meta property="og:description" content="An AI study assistant for Banking &amp; Finance, grounded in your course packs (Digital Banking, Banking Law, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, Monetary Policy).">
+<meta property="og:image" content="icons/icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mayorcity B&amp;F AI — Banking &amp; Finance Study Assistant">
+<meta name="twitter:description" content="An AI study assistant for Banking &amp; Finance, grounded in your course packs.">
+<meta name="twitter:image" content="icons/icon-512.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <header id="appHeader">
   <div class="brand-row">
+    <button id="historyToggleBtn" class="icon-btn history-toggle-btn" type="button" aria-label="Open conversation history" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>
+    </button>
     <div class="brand">
       <svg class="mark-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
         <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.03)" stroke="#C9A66B" stroke-width="1"/>
@@ -61,6 +78,38 @@
     <span class="chip" data-subjects="monetary policy">Monetary Policy</span>
   </div>
 </header>
+
+<div id="sidebarOverlay" class="sidebar-overlay" hidden></div>
+<aside id="historySidebar" class="history-sidebar" aria-label="Conversation history" aria-hidden="true">
+  <div class="sidebar-head">
+    <span class="sidebar-title">Conversations</span>
+    <button id="sidebarCloseBtn" class="icon-btn" type="button" aria-label="Close conversation history">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+  </div>
+  <button id="sidebarNewChatBtn" class="sidebar-new-chat" type="button">+ New chat</button>
+  <div id="conversationList" class="conversation-list"></div>
+  <div class="sidebar-footer">
+    <button id="exportChatBtn" class="sidebar-footer-btn" type="button">Export this chat</button>
+    <button id="aboutBtn" class="sidebar-footer-btn" type="button">About &amp; founder</button>
+  </div>
+</aside>
+
+<div id="aboutModalOverlay" class="modal-overlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
+    <button id="aboutModalCloseBtn" class="icon-btn modal-close-btn" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+    <svg class="modal-mark" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+      <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
+      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#C9A66B" text-anchor="middle">MB</text>
+    </svg>
+    <h2 id="aboutModalTitle">About Mayorcity B&amp;F AI</h2>
+    <p>A personal banking &amp; finance study assistant, grounded in CIBN-centered course packs — Digital Banking, Banking Law &amp; Practice, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, and Monetary Policy. Answers are drawn from the loaded study packs first, with clear general-knowledge explanations where a course pack doesn't cover a topic.</p>
+    <h3>Founder</h3>
+    <p><strong>Adedeji Mayowa</strong> is a Finance student at Lagos State University (LASU), a member of the Chartered Institute of Bankers of Nigeria (CIBN), Founder and Head Tutor at Determined Minds, a mentor with "The Better Version of Mayorcity," and Owner &amp; CEO of Mayorcity Emart. Mayorcity B&amp;F AI was built to give fellow banking &amp; finance students a study companion grounded in their own course material.</p>
+  </div>
+</div>
 
 <main>
   <div class="chat-shell">
@@ -97,17 +146,18 @@
       <textarea id="input" placeholder="How can I help you?" rows="1" aria-label="Type your question"></textarea>
       <button class="send-btn" id="sendBtn" aria-label="Send question">Ask</button>
     </div>
-    <p class="composer-hint">Enter to send &middot; Shift+Enter for a new line</p>
+    <p class="composer-hint">Enter to send &middot; Shift+Enter for a new line &middot; Ctrl/Cmd+K for a new chat</p>
   </div>
 </main>
 <footer class="app-footer">Mayorcity B&amp;F AI can make mistakes — always verify against your official study pack.</footer>
 
-<script src="js/kb-parts/kb-part1.js"></script>
-<script src="js/kb-parts/kb-part2.js"></script>
-<script src="js/kb-parts/kb-part3.js"></script>
-<script src="js/kb-parts/kb-part4.js"></script>
-<script src="js/kb-parts/kb-part5.js"></script>
-<script src="js/kb-parts/kb-part6.js"></script>
-<script src="js/app.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script src="js/kb-parts/kb-part1.js" defer></script>
+<script src="js/kb-parts/kb-part2.js" defer></script>
+<script src="js/kb-parts/kb-part3.js" defer></script>
+<script src="js/kb-parts/kb-part4.js" defer></script>
+<script src="js/kb-parts/kb-part5.js" defer></script>
+<script src="js/kb-parts/kb-part6.js" defer></script>
+<script src="js/app.js" defer></script>
 </body>
 </html>
