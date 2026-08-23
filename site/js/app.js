@@ -54,8 +54,13 @@ Rules:
 - If an ATTACHED DOCUMENT is provided below, it was uploaded by the student just for this conversation (not part of their permanent study packs). Treat it as authoritative for this session: answer questions about it directly, and if asked to generate practice questions, a summary, or a quiz from it, base that entirely on its actual content rather than inventing material.
 - If the student's message includes an attached image (e.g. a scanned textbook page, a diagram, a past-question screenshot, or handwritten workings), examine it carefully and ground your answer in what's actually shown — read any text in it, and reference specific parts of the image where relevant.`;
 
+const ABOUT_BLOCK = `
+
+ABOUT THIS ASSISTANT (background only — do not volunteer this unprompted; bring it up only if the student explicitly asks who built this, who Adedeji Mayowa is, what Determined Minds or Mayorcity Emart are, or something equivalent):
+Mayorcity B&F AI was built by Adedeji Mayowa — a Finance student at Lagos State University (LASU), a member of the Chartered Institute of Bankers of Nigeria (CIBN), Founder and Head Tutor at Determined Minds, a mentor with "The Better Version of Mayorcity," and Owner & CEO of Mayorcity Emart. If asked, answer factually and briefly from this, and don't invent further biographical detail beyond it.`;
+
 function buildSystemPrompt(contextChunks, attachedText, attachedName){
-  let prompt = SYSTEM_BASE;
+  let prompt = SYSTEM_BASE + ABOUT_BLOCK;
   if(contextChunks.length === 0){
     prompt += "\n\nCONTEXT EXCERPTS: (none matched this question — answer from general banking/finance knowledge and say the study packs didn't have a clear match.)";
   } else {
@@ -131,7 +136,7 @@ if('serviceWorker' in navigator){
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   const THEME_KEY = 'mb_theme';
   const DARK_META = '#121114';
-  const LIGHT_META = '#F4EFE2';
+  const LIGHT_META = '#FBF7EC';
 
   function applyTheme(theme){
     document.documentElement.setAttribute('data-theme', theme);
@@ -162,8 +167,32 @@ function formatFormulaInner(escaped){
   out = out.replace(/\*/g, '&times;');
   return out;
 }
+function unescapeHtml(s){
+  return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+}
+/* Converts the ASCII formula notation the model is instructed to use (^, _, ×, ÷) into
+   LaTeX so KaTeX can typeset it properly, instead of the plain <sup>/<sub> fallback. */
+function asciiFormulaToLatex(raw){
+  let s = raw;
+  s = s.replace(/\^\(([^)]+)\)/g, '^{$1}');
+  s = s.replace(/_\(([^)]+)\)/g, '_{$1}');
+  s = s.replace(/\^(-?[A-Za-z0-9.]+)/g, '^{$1}');
+  s = s.replace(/_(-?[A-Za-z0-9.]+)/g, '_{$1}');
+  s = s.replace(/×/g, ' \\times ');
+  s = s.replace(/÷/g, ' \\div ');
+  s = s.replace(/\*/g, ' \\times ');
+  return s;
+}
 function inlineFormat(s){
-  s = s.replace(/`([^`]+)`/g, (m, inner) => '<code class="fx">' + formatFormulaInner(inner) + '</code>');
+  s = s.replace(/`([^`]+)`/g, (m, inner) => {
+    if(window.katex){
+      try{
+        const latex = asciiFormulaToLatex(unescapeHtml(inner));
+        return '<span class="fx-katex">' + window.katex.renderToString(latex, {throwOnError:false, output:'html'}) + '</span>';
+      }catch(e){ /* fall through to the plain ASCII formatter below */ }
+    }
+    return '<code class="fx">' + formatFormulaInner(inner) + '</code>';
+  });
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
   return s;
@@ -221,13 +250,190 @@ const attachName = document.getElementById('attachName');
 const attachStatus = document.getElementById('attachStatus');
 const attachRemove = document.getElementById('attachRemove');
 const scrollBottomBtn = document.getElementById('scrollBottomBtn');
+const historyToggleBtn = document.getElementById('historyToggleBtn');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const historySidebar = document.getElementById('historySidebar');
+const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+const sidebarNewChatBtn = document.getElementById('sidebarNewChatBtn');
+const conversationList = document.getElementById('conversationList');
+const exportChatBtn = document.getElementById('exportChatBtn');
+const aboutBtn = document.getElementById('aboutBtn');
+const aboutModalOverlay = document.getElementById('aboutModalOverlay');
+const aboutModalCloseBtn = document.getElementById('aboutModalCloseBtn');
 
-let history = [];       // {role, content} sent to the API
-let transcript = [];    // {role, text, sources} persisted to localStorage for display
-const STORAGE_KEY = 'mb_chat_v1';
+document.body.classList.add('loaded');
 
+let history = [];       // {role, content} sent to the API for the ACTIVE conversation
+let transcript = [];    // {role, text, sources} for the ACTIVE conversation, persisted to localStorage
+
+/* ---------- Multiple saved conversations ---------- */
+const CONV_STORAGE_KEY = 'mb_conversations_v1';
+const LEGACY_STORAGE_KEY = 'mb_chat_v1'; // pre-history-panel single-thread storage, migrated below
+const ACTIVE_CONV_KEY = 'mb_active_conv_id';
+
+let conversations = [];   // [{id, title, updatedAt, transcript:[{role,text,sources}]}]
+let activeConvId = null;
+
+function deriveTitle(list){
+  const firstUser = list.find(m => m.role === 'user');
+  if(!firstUser || !firstUser.text) return 'New chat';
+  const words = firstUser.text.trim().replace(/\s+/g, ' ');
+  return words.length > 42 ? words.slice(0, 42) + '…' : words;
+}
+function getActiveConv(){
+  return conversations.find(c => c.id === activeConvId) || null;
+}
+function loadConversations(){
+  try{
+    const raw = localStorage.getItem(CONV_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) return parsed;
+    }
+  }catch(e){ /* corrupt storage — fall through */ }
+  // One-time migration from the old single-thread format, if present.
+  try{
+    const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if(legacyRaw){
+      const legacy = JSON.parse(legacyRaw);
+      if(Array.isArray(legacy) && legacy.length){
+        return [{ id: 'c' + Date.now(), title: deriveTitle(legacy), updatedAt: Date.now(), transcript: legacy }];
+      }
+    }
+  }catch(e){ /* ignore */ }
+  return [];
+}
+function saveConversations(){
+  try{ localStorage.setItem(CONV_STORAGE_KEY, JSON.stringify(conversations)); }catch(e){ /* storage unavailable — ignore */ }
+}
 function persist(){
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(transcript)); }catch(e){ /* storage unavailable — ignore */ }
+  const conv = getActiveConv();
+  if(!conv) return;
+  conv.transcript = transcript;
+  conv.updatedAt = Date.now();
+  if(!conv.title || conv.title === 'New chat') conv.title = deriveTitle(transcript);
+  saveConversations();
+  renderConversationList();
+}
+
+function renderConversationList(){
+  if(!conversationList) return;
+  conversationList.innerHTML = '';
+  if(!conversations.length){
+    const hint = document.createElement('div');
+    hint.className = 'conv-empty-hint';
+    hint.textContent = 'No conversations yet — start one!';
+    conversationList.appendChild(hint);
+    return;
+  }
+  const sorted = conversations.slice().sort((a, b) => b.updatedAt - a.updatedAt);
+  for(const conv of sorted){
+    const item = document.createElement('div');
+    item.className = 'conv-item' + (conv.id === activeConvId ? ' active' : '');
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    const title = document.createElement('span');
+    title.className = 'conv-item-title';
+    title.textContent = conv.title || 'New chat';
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'conv-item-delete';
+    del.setAttribute('aria-label', 'Delete this conversation');
+    del.innerHTML = '&times;';
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteConversation(conv.id); });
+    item.appendChild(title);
+    item.appendChild(del);
+    item.addEventListener('click', () => switchConversation(conv.id));
+    item.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); switchConversation(conv.id); }
+    });
+    conversationList.appendChild(item);
+  }
+}
+
+function resetChatUI(){
+  history = [];
+  transcript = [];
+  document.querySelectorAll('.chip.active').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-pressed','false'); });
+  activeSubjects.clear();
+  clearAttachment();
+  showScrollBtn(false);
+  messagesEl.innerHTML = '';
+  messagesEl.appendChild(emptyState);
+  emptyState.style.display = '';
+  headerEl.classList.remove('compact');
+  headerCollapsed = false;
+  messagesEl.scrollTop = 0;
+  inputEl.focus();
+}
+
+function renderMessagesFromTranscript(list){
+  messagesEl.innerHTML = '';
+  history = [];
+  if(!list.length){
+    messagesEl.appendChild(emptyState);
+    emptyState.style.display = '';
+    return;
+  }
+  emptyState.style.display = 'none';
+  let lastDiv = null;
+  for(const entry of list){
+    lastDiv = addMsg(entry.role, entry.text, entry.sources, {record:false});
+    history.push({role: entry.role === 'user' ? 'user' : 'assistant', content: entry.text});
+  }
+  const last = list[list.length - 1];
+  const prev = list[list.length - 2];
+  if(last && last.role === 'bot' && prev && prev.role === 'user' && lastDiv){
+    addRegenerateButton(lastDiv, prev.text);
+  }
+}
+
+function startNewConversation(opts){
+  opts = opts || {};
+  const conv = { id: 'c' + Date.now() + Math.random().toString(36).slice(2,6), title: 'New chat', updatedAt: Date.now(), transcript: [] };
+  conversations.unshift(conv);
+  activeConvId = conv.id;
+  try{ localStorage.setItem(ACTIVE_CONV_KEY, activeConvId); }catch(e){ /* ignore */ }
+  saveConversations();
+  resetChatUI();
+  renderConversationList();
+  if(!opts.silent) closeSidebar();
+}
+
+function switchConversation(id){
+  const conv = conversations.find(c => c.id === id);
+  if(!conv || id === activeConvId){ closeSidebar(); return; }
+  activeConvId = id;
+  try{ localStorage.setItem(ACTIVE_CONV_KEY, activeConvId); }catch(e){ /* ignore */ }
+  document.querySelectorAll('.chip.active').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-pressed','false'); });
+  activeSubjects.clear();
+  clearAttachment();
+  showScrollBtn(false);
+  headerEl.classList.remove('compact');
+  headerCollapsed = false;
+  transcript = (conv.transcript || []).slice();
+  renderMessagesFromTranscript(transcript);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  renderConversationList();
+  closeSidebar();
+}
+
+function deleteConversation(id){
+  const wasActive = id === activeConvId;
+  conversations = conversations.filter(c => c.id !== id);
+  saveConversations();
+  if(wasActive){
+    if(conversations.length){
+      const next = conversations.slice().sort((a,b) => b.updatedAt - a.updatedAt)[0];
+      activeConvId = null; // force switchConversation to actually run
+      switchConversation(next.id);
+      return; // switchConversation already re-renders the list
+    }
+    activeConvId = null;
+    try{ localStorage.removeItem(ACTIVE_CONV_KEY); }catch(e){ /* ignore */ }
+    resetChatUI();
+  }
+  renderConversationList();
 }
 
 function addMsg(role, text, sources, opts){
@@ -256,6 +462,48 @@ function addMsg(role, text, sources, opts){
       setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1400);
     });
     div.appendChild(copyBtn);
+
+    if(opts.feedback !== false){
+      const feedbackRow = document.createElement('div');
+      feedbackRow.className = 'feedback-row';
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'feedback-btn up';
+      upBtn.setAttribute('aria-label', 'Good response');
+      upBtn.innerHTML = '&#128077;';
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'feedback-btn down';
+      downBtn.setAttribute('aria-label', 'Poor response');
+      downBtn.innerHTML = '&#128078;';
+      const thanks = document.createElement('span');
+      thanks.className = 'feedback-thanks';
+      thanks.hidden = true;
+      thanks.textContent = 'Thanks for the feedback';
+      function sendFeedback(rating){
+        if(upBtn.disabled) return;
+        upBtn.disabled = true;
+        downBtn.disabled = true;
+        (rating === 'up' ? upBtn : downBtn).classList.add('selected');
+        thanks.hidden = false;
+        const lastQuestion = [...history].reverse().find(m => m.role === 'user');
+        fetch('/.netlify/functions/feedback', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            rating,
+            question: (lastQuestion && lastQuestion.content) ? lastQuestion.content.slice(0, 500) : '',
+            answer: text.slice(0, 1000)
+          })
+        }).catch(() => { /* best-effort — feedback isn't critical to the chat working */ });
+      }
+      upBtn.addEventListener('click', () => sendFeedback('up'));
+      downBtn.addEventListener('click', () => sendFeedback('down'));
+      feedbackRow.appendChild(upBtn);
+      feedbackRow.appendChild(downBtn);
+      feedbackRow.appendChild(thanks);
+      div.appendChild(feedbackRow);
+    }
   }
 
   if(sources && sources.length){
@@ -503,6 +751,11 @@ async function ask(question, opts){
   opts = opts || {};
   if(!question || !question.trim()) return;
   const q = question.trim();
+  if(!activeConvId){
+    // First message from a fresh visitor (or after deleting every conversation) —
+    // create the conversation on demand instead of showing an empty one upfront.
+    startNewConversation({silent: true});
+  }
   if(!opts.isRegenerate){
     addMsg('user', q);
     history.push({role:'user', content: q});
@@ -534,7 +787,9 @@ async function ask(question, opts){
       })
     });
     if(!resp.ok){
-      throw new Error("Server responded with status " + resp.status);
+      const e = new Error("Server responded with status " + resp.status);
+      e.status = resp.status;
+      throw e;
     }
     const data = await resp.json();
     removeTyping();
@@ -547,7 +802,17 @@ async function ask(question, opts){
     addRegenerateButton(botDiv, q);
   }catch(err){
     removeTyping();
-    const errDiv = addMsg('bot', "Something went wrong reaching the model. Please check your connection and try again.", null, {record:false});
+    let errMsg = "Something went wrong reaching the model. Please check your connection and try again.";
+    if(err && err.status === 429){
+      errMsg = "The assistant is handling a lot of requests right now — please wait a few seconds and try again.";
+    } else if(err && err.status >= 500){
+      errMsg = "The study assistant's server had a hiccup on that request. Please try again in a moment.";
+    } else if(err && err.status === 400){
+      errMsg = "That request couldn't be processed. Try rephrasing your question.";
+    } else if(!navigator.onLine){
+      errMsg = "You appear to be offline. Reconnect and try again.";
+    }
+    const errDiv = addMsg('bot', errMsg, null, {record:false, feedback:false});
     const retryBtn = document.createElement('button');
     retryBtn.type = 'button';
     retryBtn.className = 'retry-btn';
@@ -615,40 +880,88 @@ scrollBottomBtn.addEventListener('click', () => {
 });
 
 /* ---------- New chat ---------- */
-newChatBtn.addEventListener('click', () => {
-  history = [];
-  transcript = [];
-  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-  document.querySelectorAll('.chip.active').forEach(el => { el.classList.remove('active'); el.setAttribute('aria-pressed','false'); });
-  activeSubjects.clear();
-  clearAttachment();
-  showScrollBtn(false);
-  messagesEl.innerHTML = '';
-  messagesEl.appendChild(emptyState);
-  emptyState.style.display = '';
-  headerEl.classList.remove('compact');
-  headerCollapsed = false;
-  messagesEl.scrollTop = 0;
-  inputEl.focus();
+newChatBtn.addEventListener('click', () => startNewConversation());
+
+/* ---------- History sidebar ---------- */
+function openSidebar(){
+  if(!historySidebar) return;
+  historySidebar.classList.add('open');
+  historySidebar.setAttribute('aria-hidden', 'false');
+  sidebarOverlay.hidden = false;
+  requestAnimationFrame(() => sidebarOverlay.classList.add('open'));
+  historyToggleBtn.setAttribute('aria-expanded', 'true');
+}
+function closeSidebar(){
+  if(!historySidebar) return;
+  historySidebar.classList.remove('open');
+  historySidebar.setAttribute('aria-hidden', 'true');
+  sidebarOverlay.classList.remove('open');
+  setTimeout(() => { sidebarOverlay.hidden = true; }, 220);
+  historyToggleBtn.setAttribute('aria-expanded', 'false');
+}
+if(historyToggleBtn){
+  historyToggleBtn.addEventListener('click', () => {
+    historySidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  sidebarCloseBtn.addEventListener('click', closeSidebar);
+  sidebarOverlay.addEventListener('click', closeSidebar);
+  sidebarNewChatBtn.addEventListener('click', () => startNewConversation());
+}
+
+/* ---------- About modal ---------- */
+function openAbout(){ if(aboutModalOverlay) aboutModalOverlay.hidden = false; }
+function closeAbout(){ if(aboutModalOverlay) aboutModalOverlay.hidden = true; }
+if(aboutBtn){
+  aboutBtn.addEventListener('click', () => { closeSidebar(); openAbout(); });
+  aboutModalCloseBtn.addEventListener('click', closeAbout);
+  aboutModalOverlay.addEventListener('click', (e) => { if(e.target === aboutModalOverlay) closeAbout(); });
+}
+
+/* ---------- Export current chat as a text file ---------- */
+if(exportChatBtn){
+  exportChatBtn.addEventListener('click', () => {
+    const conv = getActiveConv();
+    if(!conv || !conv.transcript.length){ closeSidebar(); return; }
+    const lines = conv.transcript.map(m => (m.role === 'user' ? 'You: ' : 'Mayorcity B&F AI: ') + m.text);
+    const blob = new Blob([lines.join('\n\n')], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (conv.title || 'mayorcity-chat').replace(/[^\w\- ]+/g, '').trim().slice(0, 50) + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    closeSidebar();
+  });
+}
+
+/* ---------- Keyboard shortcuts ---------- */
+document.addEventListener('keydown', (e) => {
+  const mod = e.metaKey || e.ctrlKey;
+  if(mod && e.key.toLowerCase() === 'k'){
+    e.preventDefault();
+    startNewConversation();
+  } else if(e.key === 'Escape'){
+    if(aboutModalOverlay && !aboutModalOverlay.hidden) closeAbout();
+    else if(historySidebar && historySidebar.classList.contains('open')) closeSidebar();
+  }
 });
 
-/* ---------- Restore previous conversation, if any ---------- */
-(function restore(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-    const saved = JSON.parse(raw);
-    if(!Array.isArray(saved) || saved.length === 0) return;
-    let lastDiv = null;
-    for(const entry of saved){
-      lastDiv = addMsg(entry.role, entry.text, entry.sources, {record:false});
-      history.push({role: entry.role === 'user' ? 'user' : 'assistant', content: entry.text});
-    }
-    transcript = saved;
-    const last = saved[saved.length - 1];
-    const prev = saved[saved.length - 2];
-    if(last && last.role === 'bot' && prev && prev.role === 'user' && lastDiv){
-      addRegenerateButton(lastDiv, prev.text);
-    }
-  }catch(e){ /* corrupt or unavailable storage — start fresh */ }
+/* ---------- Load saved conversations, if any ---------- */
+(function bootstrapConversations(){
+  conversations = loadConversations();
+  try{ activeConvId = localStorage.getItem(ACTIVE_CONV_KEY); }catch(e){ activeConvId = null; }
+  if(!conversations.length){
+    activeConvId = null;
+  } else if(!activeConvId || !conversations.some(c => c.id === activeConvId)){
+    activeConvId = conversations.slice().sort((a,b) => b.updatedAt - a.updatedAt)[0].id;
+  }
+  if(activeConvId){
+    const conv = getActiveConv();
+    transcript = conv ? conv.transcript.slice() : [];
+    renderMessagesFromTranscript(transcript);
+  }
+  saveConversations();
+  renderConversationList();
 })();
