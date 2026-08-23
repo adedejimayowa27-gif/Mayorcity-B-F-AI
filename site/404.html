@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('mb_theme');
+    var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){ document.documentElement.setAttribute('data-theme', 'dark'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#121114">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="shortcut icon" href="favicon.ico">
+<title>Page not found — Mayorcity B&amp;F AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .status-page{
+    margin:auto; text-align:center; max-width:460px; padding:24px;
+    display:flex; flex-direction:column; align-items:center; gap:14px;
+  }
+  .status-page .code{
+    font-family:var(--display); font-style:italic; font-weight:500;
+    font-size:64px; color:var(--gold-bright); line-height:1;
+  }
+  .status-page h1{ font-family:var(--display); font-style:italic; font-weight:500; font-size:24px; margin:0; color:var(--text); }
+  .status-page p{ color:var(--text-soft); font-size:14.5px; line-height:1.6; margin:0; }
+  .status-page a.home-link{
+    margin-top:8px; display:inline-block; font-family:var(--sans); font-weight:600; font-size:13px;
+    padding:10px 22px; border-radius:999px; text-decoration:none;
+    background: linear-gradient(155deg, var(--gold-bright), var(--gold)); color:#1A1408;
+  }
+</style>
+</head>
+<body>
+<main style="display:flex; flex:1;">
+  <div class="status-page">
+    <div class="code">404</div>
+    <h1>This page wandered off the study pack</h1>
+    <p>The page you're looking for doesn't exist. Head back and pick up where you left off.</p>
+    <a class="home-link" href="/">Back to Mayorcity B&amp;F AI</a>
+  </div>
+</main>
+</body>
+</html>
