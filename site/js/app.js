@@ -42,14 +42,14 @@ function retrieve(query, topN=9){
 const SYSTEM_BASE = `You are Mayorcity B&F AI, a personal banking & finance assistant. Your specialism is Banking & Finance, and you also cover Ethics & Corporate Governance, Accounting, Insurance, Economics, Mathematics of Finance, Monetary Policy, Public Administration, and Law, using the student's own course materials.
 
 Rules:
-- Ground your explanations in the CONTEXT EXCERPTS provided below, which come from the student's actual study packs and past-question banks (mostly Chartered Institute of Bankers of Nigeria intermediate/diploma material).
-- When the context contains directly relevant material, use it, and mention which document it's from (e.g. "per your Digital Banking Study Pack..."). When the context is thin or irrelevant to the question, say so plainly and still give your best general finance/banking explanation — do not pretend the excerpts cover something they don't.
-- The study packs now include a dedicated Mathematics of Finance source (FIN 203 — personal study notes covering simple interest, discounting, bank discount, compound interest, effective rate of interest, annuities, sinking funds, loan amortization, and uneven cash flows). Use it whenever relevant, the same way you'd use any other study pack. Monetary Policy does not yet have a dedicated source document unless the student has added one — for Monetary Policy questions with no matching context, answer from general knowledge (e.g. MPR/CRR/OMO, inflation targeting) and note that this answer isn't grounded in an uploaded study pack.
+- Ground your explanations in the CONTEXT EXCERPTS provided below, which come from the student's own uploaded study packs and past-question banks. Most of this material is Chartered Institute of Bankers of Nigeria (CIBN) intermediate/diploma content, but not all of it is — some sources (e.g. FIN 203 Mathematics of Finance notes, and any other material the student adds) are general course material, not CIBN-specific. Do not frame every answer as being about CIBN or CIBN exams by default. Only mention CIBN, "your CIBN pack," exam-body terminology, or CIBN-specific framing when the matched context excerpt is actually from CIBN-sourced material, or the student's question itself is clearly about a CIBN exam/paper. For general banking, finance, or mathematics-of-finance questions where the matched context isn't CIBN material (or there's no match), just answer the question on its own terms — reference the actual source name/subject if one matched, or answer from general knowledge if none did, without inventing a CIBN angle that isn't there.
+- When the context contains directly relevant material, use it, and mention which document it's from using its actual subject (e.g. "per your Digital Banking Study Pack..." or "per your FIN 203 notes..."). When the context is thin or irrelevant to the question, say so plainly and still give your best general finance/banking explanation — do not pretend the excerpts cover something they don't.
 - Prioritize accuracy and clarity over length. Use short paragraphs or bullet points. Define key terms simply, then build up.
 - If a question is a past exam MCQ, explain the reasoning for the correct answer rather than only stating a letter.
 - Stay encouraging and exam-focused, like a knowledgeable tutor, not a generic chatbot.
 - Never restate, paraphrase, or acknowledge the question, and never announce what you're about to do ("Sure, here's...", "I'll explain...", "This is a great question about...", "Let me answer the following in bullet points as requested..."). Go straight into the substantive answer itself, with no preamble.
-- Format with light markdown, since this interface renders it: use **bold** (double asterisks only) for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Never use single-asterisk emphasis like *this* — always double asterisks for anything bold, and plain text otherwise. Do NOT use tables, links, code blocks for prose, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.
+- Format with light markdown, since this interface renders it: use **bold** (double asterisks only) for key terms and to open each short section, "### " for section headers on their own line, "- " for bullet lists, "1. " for numbered lists, and a blank line between paragraphs. Never use single-asterisk emphasis like *this* — always double asterisks for anything bold, and plain text otherwise. Do NOT use links, code blocks for prose, images, or nested/multiple formatting layers — keep it simple and skimmable, not a wall of text.
+- Tables ARE supported and render properly: use standard markdown table syntax (a header row, a "|---|---|" separator row directly under it, then data rows, e.g. "| Feature | Bank A | Bank B |" then "|---|---|---|" then the data rows) whenever you're comparing options, rates, or structured line items side by side — that's clearer than prose or a bullet list for that kind of content. Don't force a table where a short list or a couple of sentences would do.
 - For any mathematical or financial FORMULA (interest, present/future value, ratios, etc.), wrap the whole formula in single backticks so it renders in a proper formula style, and use plain-ASCII notation inside: "^" for exponents (e.g. \`FV = PV(1+r)^n\`), "_" for subscripts (e.g. \`FV_n\`), and "×" and "÷" instead of "*" and "/". Keep formulas on their own line, separate from surrounding prose.
 - If an ATTACHED DOCUMENT is provided below, it was uploaded by the student just for this conversation (not part of their permanent study packs). Treat it as authoritative for this session: answer questions about it directly, and if asked to generate practice questions, a summary, or a quiz from it, base that entirely on its actual content rather than inventing material.
 - If the student's message includes an attached image (e.g. a scanned textbook page, a diagram, a past-question screenshot, or handwritten workings), examine it carefully and ground your answer in what's actually shown — read any text in it, and reference specific parts of the image where relevant.`;
@@ -197,6 +197,35 @@ function inlineFormat(s){
   s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
   return s;
 }
+/* A markdown table row looks like "| a | b | c |" (or "a | b | c" without outer pipes).
+   The separator row directly under the header ("|---|:---:|---:|") is what confirms it's
+   really a table rather than a line that just happens to contain a pipe character. */
+function isTableRow(line){
+  return /\|/.test(line) && line.trim() !== '' && !/^\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?$/.test(line.trim());
+}
+function isTableSeparator(line){
+  return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(line.trim());
+}
+function splitTableRow(line){
+  let s = line.trim();
+  if(s.startsWith('|')) s = s.slice(1);
+  if(s.endsWith('|')) s = s.slice(0, -1);
+  return s.split('|').map(c => c.trim());
+}
+function renderTable(rows){
+  const header = rows[0];
+  const body = rows.slice(1);
+  let html = '<div class="tbl-wrap"><table class="ans-table"><thead><tr>';
+  for(const cell of header) html += `<th>${inlineFormat(escapeHtml(cell))}</th>`;
+  html += '</tr></thead><tbody>';
+  for(const r of body){
+    html += '<tr>';
+    for(let i=0;i<header.length;i++) html += `<td>${inlineFormat(escapeHtml(r[i] || ''))}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
+  return html;
+}
 function formatText(raw){
   const lines = raw.replace(/\r\n/g,'\n').split('\n');
   let html = '';
@@ -204,9 +233,22 @@ function formatText(raw){
   function closeList(){
     if(listType){ html += listType === 'ul' ? '</ul>' : '</ol>'; listType = null; }
   }
-  for(const rawLine of lines){
-    const line = rawLine.trim();
+  for(let i=0;i<lines.length;i++){
+    const line = lines[i].trim();
     if(line === ''){ closeList(); continue; }
+    /* Table: a row containing "|", immediately followed by a "|---|---|" separator row. */
+    if(isTableRow(line) && i+1 < lines.length && isTableSeparator(lines[i+1])){
+      closeList();
+      const tableRows = [splitTableRow(line)];
+      let j = i+2;
+      while(j < lines.length && isTableRow(lines[j].trim())){
+        tableRows.push(splitTableRow(lines[j].trim()));
+        j++;
+      }
+      html += renderTable(tableRows);
+      i = j-1;
+      continue;
+    }
     if(/^#{1,4}\s+/.test(line)){
       closeList();
       html += `<div class="ans-h">${inlineFormat(escapeHtml(line.replace(/^#{1,4}\s+/, '')))}</div>`;
@@ -257,6 +299,7 @@ const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 const sidebarNewChatBtn = document.getElementById('sidebarNewChatBtn');
 const conversationList = document.getElementById('conversationList');
 const exportChatBtn = document.getElementById('exportChatBtn');
+const exportChatPdfBtn = document.getElementById('exportChatPdfBtn');
 const aboutBtn = document.getElementById('aboutBtn');
 const aboutModalOverlay = document.getElementById('aboutModalOverlay');
 const aboutModalCloseBtn = document.getElementById('aboutModalCloseBtn');
@@ -462,6 +505,14 @@ function addMsg(role, text, sources, opts){
       setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('copied'); }, 1400);
     });
     div.appendChild(copyBtn);
+
+    const imgBtn = document.createElement('button');
+    imgBtn.type = 'button';
+    imgBtn.className = 'copy-btn img-btn';
+    imgBtn.textContent = 'Save as image';
+    imgBtn.setAttribute('aria-label', 'Save this answer as an image');
+    imgBtn.addEventListener('click', () => saveMessageAsImage(div, imgBtn));
+    div.appendChild(imgBtn);
 
     if(opts.feedback !== false){
       const feedbackRow = document.createElement('div');
@@ -923,6 +974,93 @@ if(aboutBtn){
   aboutModalOverlay.addEventListener('click', (e) => { if(e.target === aboutModalOverlay) closeAbout(); });
 }
 
+/* ---------- Save a single answer as a PNG image ---------- */
+/* Uses html2canvas (loaded via CDN in index.html) to render the message bubble itself,
+   so bold text, tables, and KaTeX-typeset formulas all come through exactly as shown on screen. */
+async function saveMessageAsImage(msgEl, triggerBtn){
+  if(typeof html2canvas === 'undefined'){
+    if(triggerBtn){ triggerBtn.textContent = 'Unavailable offline'; setTimeout(() => { triggerBtn.textContent = 'Save as image'; }, 1800); }
+    return;
+  }
+  const original = triggerBtn ? triggerBtn.textContent : null;
+  if(triggerBtn) triggerBtn.textContent = 'Rendering…';
+  // Temporarily hide the action buttons themselves so they don't appear in the captured image.
+  const actionButtons = msgEl.querySelectorAll('.copy-btn, .feedback-row');
+  actionButtons.forEach(el => { el.dataset._prevDisplay = el.style.display; el.style.display = 'none'; });
+  try{
+    const canvas = await html2canvas(msgEl, {
+      backgroundColor: getComputedStyle(msgEl).backgroundColor || '#ffffff',
+      scale: 2,
+      useCORS: true
+    });
+    canvas.toBlob((blob) => {
+      if(!blob){ if(triggerBtn) triggerBtn.textContent = 'Error'; return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mayorcity-answer-' + Date.now() + '.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      if(triggerBtn){ triggerBtn.textContent = 'Saved'; setTimeout(() => { triggerBtn.textContent = original; }, 1400); }
+    }, 'image/png');
+  }catch(e){
+    if(triggerBtn){ triggerBtn.textContent = 'Error'; setTimeout(() => { triggerBtn.textContent = original; }, 1400); }
+  }finally{
+    actionButtons.forEach(el => { el.style.display = el.dataset._prevDisplay || ''; delete el.dataset._prevDisplay; });
+  }
+}
+
+/* ---------- Export current chat as a PDF ---------- */
+/* Renders the actual on-screen message list via html2canvas (so tables/formulas/bold come
+   through), then slices that tall canvas across as many A4 pages as needed using jsPDF. */
+async function exportChatAsPdf(){
+  const conv = getActiveConv();
+  if(!conv || !conv.transcript.length) return;
+  if(typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined'){
+    alert('PDF export needs an internet connection to load its renderer — please try again while online.');
+    return;
+  }
+  if(!messagesEl) return;
+  const { jsPDF } = window.jspdf;
+  const canvas = await html2canvas(messagesEl, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true,
+    windowWidth: messagesEl.scrollWidth
+  });
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 24;
+  const usableWidth = pageWidth - margin * 2;
+  const usableHeight = pageHeight - margin * 2;
+  const imgWidthPx = canvas.width;
+  const imgHeightPx = canvas.height;
+  const pxToPt = usableWidth / imgWidthPx;
+  const pageHeightPx = usableHeight / pxToPt;
+
+  let renderedPx = 0;
+  let pageNum = 0;
+  while(renderedPx < imgHeightPx){
+    const sliceHeightPx = Math.min(pageHeightPx, imgHeightPx - renderedPx);
+    const sliceCanvas = document.createElement('canvas');
+    sliceCanvas.width = imgWidthPx;
+    sliceCanvas.height = sliceHeightPx;
+    const ctx = sliceCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+    ctx.drawImage(canvas, 0, renderedPx, imgWidthPx, sliceHeightPx, 0, 0, imgWidthPx, sliceHeightPx);
+    const sliceData = sliceCanvas.toDataURL('image/png');
+    if(pageNum > 0) pdf.addPage();
+    pdf.addImage(sliceData, 'PNG', margin, margin, usableWidth, sliceHeightPx * pxToPt);
+    renderedPx += sliceHeightPx;
+    pageNum++;
+  }
+  pdf.save((conv.title || 'mayorcity-chat').replace(/[^\w\- ]+/g, '').trim().slice(0, 50) + '.pdf');
+}
+
 /* ---------- Export current chat as a text file ---------- */
 if(exportChatBtn){
   exportChatBtn.addEventListener('click', () => {
@@ -939,6 +1077,22 @@ if(exportChatBtn){
     a.remove();
     URL.revokeObjectURL(url);
     closeSidebar();
+  });
+}
+if(exportChatPdfBtn){
+  exportChatPdfBtn.addEventListener('click', async () => {
+    const original = exportChatPdfBtn.textContent;
+    exportChatPdfBtn.textContent = 'Preparing PDF…';
+    exportChatPdfBtn.disabled = true;
+    try{
+      await exportChatAsPdf();
+    }catch(e){
+      alert('Could not generate the PDF. Please try again.');
+    }finally{
+      exportChatPdfBtn.textContent = original;
+      exportChatPdfBtn.disabled = false;
+      closeSidebar();
+    }
   });
 }
 
