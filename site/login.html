@@ -54,8 +54,8 @@
 
       <div class="field">
         <label for="matric">Matric number</label>
-        <input type="text" id="matric" name="matric" inputmode="numeric" autocomplete="username" placeholder="e.g. 230812122" maxlength="9" required>
-        <p class="hint" id="matricHint">9 digits, with 812 or 813 in the middle.</p>
+        <input type="text" id="matric" name="matric" inputmode="numeric" autocomplete="username" placeholder="Enter your matric number" maxlength="9" required>
+        <p class="hint" id="matricHint">&nbsp;</p>
       </div>
 
       <div class="field">
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!val) {
       matricInput.classList.remove('invalid');
       matricHint.classList.remove('error');
-      matricHint.textContent = '9 digits, with 812 or 813 in the middle.';
+      matricHint.innerHTML = '&nbsp;';
       return;
     }
     if (isValidMatric(val)) {
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       matricInput.classList.add('invalid');
       matricHint.classList.add('error');
-      matricHint.textContent = 'Must be 9 digits with 812 or 813 as the middle three digits.';
+      matricHint.textContent = 'That matric number doesn\u2019t look right.';
     }
   });
 
