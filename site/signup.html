@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('mb_theme');
+    var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){ document.documentElement.setAttribute('data-theme', 'dark'); }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121114">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Sign up — Mayorcity B&amp;F AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-body">
+
+<header class="auth-header">
+  <a class="brand" href="welcome.html" style="text-decoration:none;">
+    <svg class="mark-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+      <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.03)" stroke="#C9A66B" stroke-width="1"/>
+      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#E4C68C" text-anchor="middle">MB</text>
+    </svg>
+    <h1>Mayorcity B&amp;F AI</h1>
+  </a>
+  <button id="themeToggleBtn" class="icon-btn theme-toggle-btn" type="button" aria-label="Switch to light mode">
+    <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+  </button>
+</header>
+
+<main class="auth-main">
+  <div class="auth-card-wrap">
+    <svg class="glyph-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+      <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
+      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#C9A66B" text-anchor="middle">MB</text>
+    </svg>
+    <h2>Create your account</h2>
+    <p class="sub">Sign up with your name and matric number.</p>
+
+    <form class="auth-card" id="signupForm" novalidate>
+      <div class="form-error" id="formError"></div>
+
+      <div class="field">
+        <label for="name">Full name</label>
+        <input type="text" id="name" name="name" autocomplete="name" placeholder="e.g. Adaeze Okafor" required>
+      </div>
+
+      <div class="field">
+        <label for="matric">Matric number</label>
+        <input type="text" id="matric" name="matric" inputmode="numeric" autocomplete="username" placeholder="e.g. 230812122" maxlength="9" required>
+        <p class="hint" id="matricHint">9 digits, with 812 or 813 in the middle.</p>
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="new-password" placeholder="At least 6 characters" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary auth-submit" id="submitBtn">Sign up</button>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="login.html">Log in</a></p>
+    <p class="auth-footer-link"><a href="welcome.html">&larr; Back to welcome</a></p>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+<script src="js/supabase-config.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/theme.js" defer></script>
+<script defer>
+document.addEventListener('DOMContentLoaded', async () => {
+  await redirectIfLoggedIn();
+
+  const form = document.getElementById('signupForm');
+  const matricInput = document.getElementById('matric');
+  const matricHint = document.getElementById('matricHint');
+  const formError = document.getElementById('formError');
+  const submitBtn = document.getElementById('submitBtn');
+
+  matricInput.addEventListener('input', () => {
+    const val = matricInput.value.trim();
+    if (!val) {
+      matricInput.classList.remove('invalid');
+      matricHint.classList.remove('error');
+      matricHint.textContent = '9 digits, with 812 or 813 in the middle.';
+      return;
+    }
+    if (isValidMatric(val)) {
+      matricInput.classList.remove('invalid');
+      matricHint.classList.remove('error');
+      matricHint.textContent = 'Looks good.';
+    } else {
+      matricInput.classList.add('invalid');
+      matricHint.classList.add('error');
+      matricHint.textContent = 'Must be 9 digits with 812 or 813 as the middle three digits.';
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formError.classList.remove('show');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span>Creating account\u2026';
+
+    const name = document.getElementById('name').value;
+    const matric = matricInput.value.trim();
+    const password = document.getElementById('password').value;
+
+    const { error } = await signUpStudent(name, matric, password);
+
+    if (error) {
+      formError.textContent = error;
+      formError.classList.add('show');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign up';
+      return;
+    }
+
+    window.location.replace('index.html');
+  });
+});
+</script>
+</body>
+</html>
