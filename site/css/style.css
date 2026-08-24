@@ -826,6 +826,16 @@ footer.app-footer{
   .attach-btn{ width:44px; height:44px; font-size:15px; }
   .attach-name{ max-width:120px; }
   .scroll-bottom-btn{ bottom:100px; font-size:11px; padding:8px 15px; }
+
+  /* Wrap the header into two rows on mobile: logo+name get their own full-width row,
+     action buttons (theme toggle, new chat, user pill) move to a right-aligned row
+     below — instead of squeezing everything into one row, which was overflowing/
+     wrapping the name awkwardly once the user pill was added. */
+  .brand-row{ flex-wrap:wrap; row-gap:10px; }
+  .header-actions{ flex-basis:100%; justify-content:flex-end; }
+  .user-pill{ padding:4px 4px 4px 10px; }
+  .user-pill-name{ max-width:90px; }
+  .user-pill button{ padding:5px 9px; font-size:11px; }
 }
 
 @media (max-width: 360px){
