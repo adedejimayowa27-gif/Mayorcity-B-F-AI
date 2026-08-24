@@ -3,7 +3,7 @@
 //
 // Students sign in with NAME + MATRIC NUMBER + PASSWORD. Supabase Auth requires an
 // email internally, so each matric number is mapped to a private, never-shown
-// "<matric>@mayorcity.local" address — students never see or type this.
+// "<matric>@mayorcity-students.com" address — students never see or type this.
 //
 // Matric number rule: 9 digits total, with "812" or "813" as the middle three digits.
 // Examples that PASS:  230812122, 240812001, 250812421, 260812412
@@ -15,7 +15,7 @@ function isValidMatric(matric) {
 }
 
 function matricToEmail(matric) {
-  return `${String(matric).trim().toLowerCase()}@mayorcity.local`;
+  return `${String(matric).trim().toLowerCase()}@mayorcity-students.com`;
 }
 
 // Friendlier error text for the handful of cases students will actually hit.
