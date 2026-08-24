@@ -1,0 +1,274 @@
+/* site/css/auth.css
+   Styles for welcome.html, login.html, signup.html.
+   Loaded after style.css — reuses its --tokens, fonts and .icon-btn/.modal-mark rules. */
+
+body.auth-body{
+  overflow-y: auto;
+  min-height: 100dvh;
+  height: auto;
+  align-items: center;
+}
+
+.auth-header{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:18px 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.auth-header .brand{ display:flex; align-items:center; gap:10px; }
+.auth-header .brand h1{
+  font-family:var(--display);
+  font-style:italic;
+  font-size:20px;
+  font-weight:400;
+  margin:0;
+  color:var(--text);
+  letter-spacing:.2px;
+}
+.auth-header .mark-svg{ width:36px; height:36px; flex:none; }
+
+.auth-main{
+  width:100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 20px 60px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:40px;
+  flex:1;
+}
+
+/* ---------- Welcome / hero ---------- */
+.hero{
+  text-align:center;
+  max-width:620px;
+  padding-top: 20px;
+}
+.hero .glyph-svg{ width:56px; height:56px; margin-bottom:18px; }
+.hero h2{
+  font-family:var(--display);
+  font-style:italic;
+  font-weight:400;
+  font-size:clamp(28px, 5vw, 40px);
+  color:var(--gold-on-paper-bright, var(--gold-bright));
+  margin: 0 0 12px;
+  line-height:1.15;
+}
+.hero p.lede{
+  color:var(--text-soft);
+  font-size:15.5px;
+  line-height:1.6;
+  margin:0 0 28px;
+}
+.hero-actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.btn{
+  appearance:none;
+  border-radius:999px;
+  padding:12px 26px;
+  font-family:var(--sans);
+  font-size:14.5px;
+  font-weight:600;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition: all .15s ease;
+  border:1px solid transparent;
+}
+.btn-primary{
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color:#1B1508;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover{ filter:brightness(1.06); transform: translateY(-1px); }
+.btn-secondary{
+  background: var(--surface);
+  border-color: var(--line-gold-soft);
+  color: var(--text);
+}
+.btn-secondary:hover{ background: var(--surface-strong); border-color: var(--line-gold); color: var(--gold-bright); }
+.btn:focus-visible{ outline: 2px solid var(--gold-bright); outline-offset:2px; }
+.btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none !important; }
+
+/* ---------- About / founder cards ---------- */
+.info-cards{
+  width:100%;
+  max-width: 720px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:16px;
+}
+@media (max-width: 640px){
+  .info-cards{ grid-template-columns: 1fr; }
+}
+.info-card{
+  background: var(--card-bg);
+  border:1px solid var(--card-line);
+  border-radius: var(--radius-lg);
+  padding:22px 22px 24px;
+}
+.info-card h3{
+  font-family:var(--display);
+  font-style:italic;
+  font-weight:400;
+  font-size:19px;
+  margin:0 0 10px;
+  color: var(--gold-on-paper, var(--gold));
+}
+.info-card p{
+  margin:0;
+  color:var(--ink-soft);
+  font-size:14px;
+  line-height:1.65;
+}
+.info-card p strong{ color:var(--ink); }
+
+/* ---------- Auth cards (login / signup) ---------- */
+.auth-card-wrap{
+  width:100%;
+  max-width: 400px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+  padding-top: 10px;
+}
+.auth-card-wrap .glyph-svg{ width:44px; height:44px; }
+.auth-card-wrap h2{
+  font-family:var(--display);
+  font-style:italic;
+  font-weight:400;
+  font-size:26px;
+  margin:0;
+  color: var(--gold-on-paper-bright, var(--gold-bright));
+  text-align:center;
+}
+.auth-card-wrap p.sub{
+  margin: -8px 0 4px;
+  color:var(--text-soft);
+  font-size:13.5px;
+  text-align:center;
+}
+
+.auth-card{
+  width:100%;
+  background: var(--card-bg);
+  border:1px solid var(--card-line);
+  border-radius: var(--radius-lg);
+  padding: 26px 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.field{ margin-bottom:16px; }
+.field:last-of-type{ margin-bottom:0; }
+.field label{
+  display:block;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--text-soft);
+  margin-bottom:6px;
+  letter-spacing:.2px;
+}
+.field input{
+  width:100%;
+  background: var(--surface);
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  padding:11px 13px;
+  font-family:var(--sans);
+  font-size:14.5px;
+  color:var(--text);
+  outline:none;
+  transition: border-color .15s ease, background .15s ease;
+}
+.field input::placeholder{ color:var(--text-faint); }
+.field input:focus{ border-color: var(--gold); background: var(--surface-strong); }
+.field input.invalid{ border-color: var(--debit); }
+.field .hint{
+  margin-top:6px;
+  font-size:12px;
+  color:var(--text-faint);
+  line-height:1.5;
+}
+.field .hint.error{ color: var(--debit); }
+
+.form-error{
+  display:none;
+  background: rgba(201,116,99,0.1);
+  border:1px solid rgba(201,116,99,0.35);
+  color:#E39385;
+  border-radius: var(--radius);
+  padding:10px 13px;
+  font-size:13px;
+  line-height:1.5;
+  margin-bottom:16px;
+}
+.form-error.show{ display:block; }
+
+.auth-submit{ width:100%; margin-top:6px; padding:12px 20px; }
+
+.auth-switch{
+  text-align:center;
+  font-size:13.5px;
+  color:var(--text-soft);
+}
+.auth-switch a{ color: var(--gold-on-paper, var(--gold)); font-weight:600; text-decoration:none; }
+.auth-switch a:hover{ text-decoration:underline; }
+
+.auth-footer-link{
+  text-align:center;
+}
+.auth-footer-link a{
+  color:var(--text-faint);
+  font-size:13px;
+  text-decoration:none;
+}
+.auth-footer-link a:hover{ color:var(--text-soft); }
+
+.spinner{
+  width:14px; height:14px;
+  border-radius:50%;
+  border:2px solid rgba(27,21,8,0.35);
+  border-top-color:#1B1508;
+  display:inline-block;
+  margin-right:8px;
+  animation: spin .7s linear infinite;
+  vertical-align:-2px;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ---------- Logged-in header pill (index.html) ---------- */
+.user-pill{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background: var(--surface);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:5px 6px 5px 12px;
+  font-size:12.5px;
+  color: var(--text-soft);
+}
+.user-pill .user-pill-name{ font-weight:600; color:var(--text); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.user-pill button{
+  appearance:none;
+  border:none;
+  background: var(--surface-strong);
+  color: var(--text-soft);
+  border-radius:999px;
+  padding:5px 11px;
+  font-size:11.5px;
+  font-weight:600;
+  cursor:pointer;
+}
+.user-pill button:hover{ color: var(--gold-bright); }
