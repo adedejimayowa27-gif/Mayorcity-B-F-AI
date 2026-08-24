@@ -1110,18 +1110,14 @@ document.addEventListener('keydown', (e) => {
 
 /* ---------- Load saved conversations, if any ---------- */
 (function bootstrapConversations(){
+  // Previous conversations are loaded so they still appear (and can be reopened) in
+  // the history sidebar — but we deliberately do NOT auto-resume the last one here.
+  // Every fresh visit starts on a clean, empty chat. The first message sent will
+  // create (and save) a new conversation on demand, same as clicking "New chat" —
+  // see the `if(!activeConvId)` branch in ask().
   conversations = loadConversations();
-  try{ activeConvId = localStorage.getItem(ACTIVE_CONV_KEY); }catch(e){ activeConvId = null; }
-  if(!conversations.length){
-    activeConvId = null;
-  } else if(!activeConvId || !conversations.some(c => c.id === activeConvId)){
-    activeConvId = conversations.slice().sort((a,b) => b.updatedAt - a.updatedAt)[0].id;
-  }
-  if(activeConvId){
-    const conv = getActiveConv();
-    transcript = conv ? conv.transcript.slice() : [];
-    renderMessagesFromTranscript(transcript);
-  }
+  activeConvId = null;
+  try{ localStorage.removeItem(ACTIVE_CONV_KEY); }catch(e){ /* ignore */ }
   saveConversations();
   renderConversationList();
 })();
