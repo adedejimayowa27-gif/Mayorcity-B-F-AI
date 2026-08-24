@@ -11,6 +11,19 @@
   }catch(e){ document.documentElement.setAttribute('data-theme', 'dark'); }
 })();
 </script>
+<script>
+/* Fast pre-paint auth check: if there's no local Supabase session token at all, bounce to
+   the welcome page immediately, before the chat UI ever paints. This is a heuristic (the
+   token could still be expired) — auth.js does the authoritative check once it loads. */
+(function(){
+  try{
+    var hasSession = Object.keys(localStorage).some(function(k){
+      return k.indexOf('-auth-token') !== -1 && localStorage.getItem(k);
+    });
+    if(!hasSession){ window.location.replace('welcome.html'); }
+  }catch(e){ /* localStorage unavailable — let auth.js's async check handle it */ }
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <meta name="description" content="Mayorcity B&amp;F AI — an AI study assistant for Banking &amp; Finance, grounded in your course packs (Digital Banking, Banking Law, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, Monetary Policy).">
@@ -41,6 +54,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
 </head>
 <body>
 
@@ -66,6 +80,10 @@
         <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
       </button>
       <button id="newChatBtn" class="new-chat-btn" type="button">New chat</button>
+      <div id="userPill" class="user-pill" hidden>
+        <span class="user-pill-name" id="userPillName"></span>
+        <button id="logoutBtn" type="button">Log out</button>
+      </div>
     </div>
   </div>
   <p class="tagline">Mayorcity's personal banking &amp; finance assistant — grounded in your course packs.</p>
@@ -163,6 +181,32 @@
 <script src="js/kb-parts/kb-part6.js" defer></script>
 <script src="js/kb-parts/kb-part7.js" defer></script>
 <script src="js/kb-parts/kb-part8.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+<script src="js/supabase-config.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script defer>
+document.addEventListener('DOMContentLoaded', async () => {
+  const session = await requireSession(); // authoritative check; redirects to welcome.html if none
+  if (!session) return;
+
+  const profile = await getCurrentProfile();
+  const pill = document.getElementById('userPill');
+  const pillName = document.getElementById('userPillName');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  if (profile) {
+    pillName.textContent = profile.name;
+    pillName.title = `Matric ${profile.matric_number}`;
+  }
+  pill.hidden = false;
+
+  logoutBtn.addEventListener('click', async () => {
+    logoutBtn.disabled = true;
+    await signOutStudent();
+    window.location.replace('welcome.html');
+  });
+});
+</script>
 <script src="js/app.js" defer></script>
 </body>
 </html>
