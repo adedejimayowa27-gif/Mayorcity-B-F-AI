@@ -49,7 +49,7 @@ async function signUpStudent(name, matric, password) {
 
   if (!cleanName) return { error: "Please enter your name." };
   if (!isValidMatric(cleanMatric)) {
-    return { error: "Enter a valid matric number (e.g. 230812122) — the middle three digits must be 812 or 813." };
+    return { error: "That matric number doesn't look right. Please double check it." };
   }
   if (!password || password.length < 6) {
     return { error: "Password must be at least 6 characters." };
@@ -83,7 +83,7 @@ async function signUpStudent(name, matric, password) {
 async function signInStudent(matric, password) {
   const cleanMatric = String(matric || "").trim();
   if (!isValidMatric(cleanMatric)) {
-    return { error: "Enter a valid matric number (e.g. 230812122) — the middle three digits must be 812 or 813." };
+    return { error: "That matric number doesn't look right. Please double check it." };
   }
   if (!password) return { error: "Please enter your password." };
 
