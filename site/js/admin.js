@@ -99,9 +99,13 @@ async function handleUserAction(id, status, btn){
   const allBtns = card.querySelectorAll('button');
   allBtns.forEach(b => b.disabled = true);
   try{
-    await apiCall('/.netlify/functions/admin-users', { method: 'POST', body: { id, status } });
+    const result = await apiCall('/.netlify/functions/admin-users', { method: 'POST', body: { id, status } });
+    // Trust what the server confirms was actually written (result.profile.status), not
+    // just the status we asked for — if the server ever no-ops without erroring, this
+    // stops the badge from silently drifting out of sync with the real database row.
+    const confirmedStatus = (result && result.profile && result.profile.status) || status;
     const u = allUsers.find(x => x.id === id);
-    if(u) u.status = status;
+    if(u) u.status = confirmedStatus;
     updateCounts();
     renderUsers();
   }catch(e){
