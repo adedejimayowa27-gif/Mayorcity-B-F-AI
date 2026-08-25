@@ -248,7 +248,8 @@ body.auth-body{
 @keyframes spin{ to{ transform: rotate(360deg); } }
 
 /* ---------- Logged-in header pill (index.html) ---------- */
-.user-pill{
+.user-pill{ display:none; }
+.user-pill:not([hidden]){
   display:flex;
   align-items:center;
   gap:8px;
@@ -274,7 +275,8 @@ body.auth-body{
 .user-pill button:hover{ color: var(--gold-bright); }
 
 /* ---------- Admin link (index.html header, admins only) ---------- */
-.admin-link{
+.admin-link{ display:none; }
+.admin-link:not([hidden]){
   display:inline-flex;
   align-items:center;
   gap:6px;
@@ -302,6 +304,9 @@ body.account-gated .history-toggle-btn,
 body.account-gated .app-footer{ display:none !important; }
 
 .status-panel{
+  display:none;
+}
+.status-panel:not([hidden]){
   flex:1;
   display:flex;
   align-items:center;
