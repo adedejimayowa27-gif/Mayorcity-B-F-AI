@@ -295,6 +295,41 @@ body.auth-body{
 .admin-link:hover{ background: var(--surface-strong); border-color: var(--line-gold); }
 header.compact .admin-link{ padding:7px 13px; font-size:12px; }
 
+/* ---------- Quiz link + streak badge (index.html header, all approved users) ---------- */
+.quiz-link{ display:none; }
+.quiz-link:not([hidden]){
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:10px 16px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-family:var(--sans);
+  font-size:13px;
+  font-weight:600;
+  text-decoration:none;
+  flex-shrink:0;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.quiz-link:hover{ background: var(--surface-strong); border-color: var(--line-gold); color: var(--gold-bright); }
+header.compact .quiz-link{ padding:7px 13px; font-size:12px; }
+
+.streak-badge{ display:none; }
+.streak-badge:not([hidden]){
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:6px 12px;
+  border-radius:999px;
+  background: rgba(228,166,44,0.13);
+  color:#B8860B;
+  font-size:12.5px;
+  font-weight:700;
+  flex-shrink:0;
+}
+
 /* ---------- Pending/rejected account status screen (index.html) ---------- */
 body.account-gated main,
 body.account-gated #historySidebar,
