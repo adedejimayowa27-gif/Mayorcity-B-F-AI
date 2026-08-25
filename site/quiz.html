@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('mb_theme');
+    var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){ document.documentElement.setAttribute('data-theme', 'dark'); }
+})();
+</script>
+<script>
+(function(){
+  try{
+    var hasSession = Object.keys(localStorage).some(function(k){
+      return k.indexOf('-auth-token') !== -1 && localStorage.getItem(k);
+    });
+    if(!hasSession){ window.location.replace('welcome.html'); }
+  }catch(e){ /* localStorage unavailable — let auth.js's async check handle it */ }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121114">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Quiz — Mayorcity B&amp;F AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
+<link rel="stylesheet" href="css/quiz.css">
+</head>
+<body class="auth-body">
+
+<header class="auth-header">
+  <a class="brand" href="index.html" style="text-decoration:none;">
+    <svg class="mark-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+      <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.03)" stroke="#C9A66B" stroke-width="1"/>
+      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#E4C68C" text-anchor="middle">MB</text>
+    </svg>
+    <h1>Quiz</h1>
+  </a>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <a href="index.html" class="btn btn-secondary" style="padding:9px 16px; font-size:13px;">&larr; Back to chat</a>
+    <button id="themeToggleBtn" class="icon-btn theme-toggle-btn" type="button" aria-label="Switch to light mode">
+      <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="quiz-main">
+
+  <!-- ---------- Setup ---------- -->
+  <div class="view active" id="view-setup">
+    <svg class="glyph-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+      <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
+      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#C9A66B" text-anchor="middle">MB</text>
+    </svg>
+    <h2>Test yourself</h2>
+    <p class="sub">Type in whatever you just studied — the AI will write a short quiz on it and mark it instantly.</p>
+
+    <div class="quiz-streak-row">
+      <div class="quiz-streak-stat">
+        <div class="num" id="statCurrentStreak">0</div>
+        <div class="lbl">Day streak</div>
+      </div>
+      <div class="quiz-streak-stat">
+        <div class="num" id="statLongestStreak">0</div>
+        <div class="lbl">Best streak</div>
+      </div>
+    </div>
+
+    <form class="setup-card" id="setupForm" novalidate>
+      <div class="quiz-form-error" id="setupError"></div>
+      <div class="field">
+        <label for="topicInput">Topic</label>
+        <input type="text" id="topicInput" placeholder="e.g. Central Bank monetary policy tools" required>
+      </div>
+      <div class="field">
+        <label>Number of questions</label>
+        <div class="count-row">
+          <button type="button" class="count-btn" data-count="5">5</button>
+          <button type="button" class="count-btn active" data-count="8">8</button>
+          <button type="button" class="count-btn" data-count="12">12</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary auth-submit" id="startBtn" style="margin-top:8px;">Generate quiz</button>
+    </form>
+  </div>
+
+  <!-- ---------- Loading ---------- -->
+  <div class="view" id="view-loading">
+    <div class="spinner-lg"></div>
+    <p id="loadingText">Writing your quiz&hellip;</p>
+  </div>
+
+  <!-- ---------- Quiz ---------- -->
+  <div class="view" id="view-quiz">
+    <div class="quiz-header">
+      <h2 id="quizTopicTitle">Quiz</h2>
+      <span class="quiz-progress" id="quizProgress"></span>
+    </div>
+    <div id="questionsContainer"></div>
+    <div class="quiz-submit-row">
+      <button type="button" class="btn btn-primary auth-submit" id="submitQuizBtn">Submit quiz</button>
+    </div>
+  </div>
+
+  <!-- ---------- Results ---------- -->
+  <div class="view" id="view-results">
+    <div class="results-score">
+      <div class="frac" id="resultFrac">0/0</div>
+      <div class="pct" id="resultPct">0%</div>
+    </div>
+    <h2 id="resultHeadline">Nice work!</h2>
+    <p class="streak-msg" id="resultStreakMsg"></p>
+    <div class="results-actions">
+      <button type="button" class="btn btn-secondary" id="reviewToggleBtn">Review answers</button>
+      <button type="button" class="btn btn-primary" id="newQuizBtn">New quiz</button>
+    </div>
+    <div class="review-list" id="reviewList" hidden></div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" defer></script>
+<script src="js/supabase-config.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/theme.js" defer></script>
+<script src="js/quiz.js" defer></script>
+</body>
+</html>
