@@ -109,11 +109,18 @@ async function getCurrentProfile() {
   if (!session) return null;
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("name, matric_number")
+    .select("id, name, matric_number, status, is_admin")
     .eq("id", session.user.id)
     .single();
   if (error) return null;
   return data;
+}
+
+// The current user's Supabase access token, needed as a Bearer header when calling
+// netlify functions that check who's asking (chat.js, admin-*.js).
+async function getAccessToken() {
+  const session = await getCurrentSession();
+  return session ? session.access_token : null;
 }
 
 // Call on the chat page (index.html): redirects to welcome.html if not logged in.
@@ -124,6 +131,18 @@ async function requireSession() {
     return null;
   }
   return session;
+}
+
+// Call on admin.html: redirects non-admins straight back to the chat page.
+async function requireAdminPage() {
+  const session = await requireSession();
+  if (!session) return null;
+  const profile = await getCurrentProfile();
+  if (!profile || !profile.is_admin) {
+    window.location.replace("index.html");
+    return null;
+  }
+  return profile;
 }
 
 // Call on login.html / signup.html: bounce straight to the app if already logged in.
