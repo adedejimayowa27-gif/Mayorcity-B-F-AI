@@ -218,31 +218,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   pill.hidden = false;
   
+if (profile && profile.is_admin) {
+  adminLink.hidden = false;
+}
+
+const doLogout = async () => {
+  await signOutStudent();
+  window.location.replace('welcome.html');
+};
+
+logoutBtn.addEventListener('click', () => {
+  logoutBtn.disabled = true;
+  doLogout();
+});
+
+statusPanelLogoutBtn.addEventListener('click', () => {
+  statusPanelLogoutBtn.disabled = true;
+  doLogout();
+});
+
+// Gate chat access for non-admin accounts that are not approved.
 if (profile && !profile.is_admin && profile.status !== 'approved') {
-    adminLink.hidden = false;
+  document.body.classList.add('account-gated');
+
+  if (profile.status === 'rejected') {
+    statusPanelTitle.textContent = 'Account access declined';
+    statusPanelText.textContent = "Your account access was declined. If you believe this is a mistake, please contact the admin.";
+  } else {
+    statusPanelTitle.textContent = 'Account pending approval';
+    statusPanelText.textContent = `Hi ${profile.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
   }
 
-  const doLogout = async () => {
-    await signOutStudent();
-    window.location.replace('welcome.html');
-  };
-  logoutBtn.addEventListener('click', () => { logoutBtn.disabled = true; doLogout(); });
-  statusPanelLogoutBtn.addEventListener('click', () => { statusPanelLogoutBtn.disabled = true; doLogout(); });
-
-  // Gate chat access on the account's approval status. This mirrors what chat.js
-  // enforces server-side — this is just so a pending/rejected student sees a clear
-  // message instead of a confusing error the first time they try to send something.
-  if (profile && profile.status !== 'approved') {
-    document.body.classList.add('account-gated');
-    if (profile.status === 'rejected') {
-      statusPanelTitle.textContent = 'Account access declined';
-      statusPanelText.textContent = "Your account access was declined. If you believe this is a mistake, please contact the admin.";
-    } else {
-      statusPanelTitle.textContent = 'Account pending approval';
-      statusPanelText.textContent = `Hi ${profile.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
-    }
-    statusPanel.hidden = false;
-  }
+  statusPanel.hidden = false;
+}
 });
 </script>
 <script src="js/app.js" defer></script>
