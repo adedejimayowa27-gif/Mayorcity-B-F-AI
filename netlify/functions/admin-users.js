@@ -47,7 +47,20 @@ exports.handler = async function (event) {
       return { statusCode: 500, body: JSON.stringify({ error: "Failed to update status: " + t }) };
     }
 
-    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: true }) };
+    // IMPORTANT: PostgREST returns 200 OK with an empty array (not an error) when the
+    // id=eq.… filter matches zero rows — e.g. a stale/mistyped id. Without this check
+    // that silent no-op looks identical to a real update: the admin UI would flip to
+    // "Approved" while the student's row never actually changed. Treat "nothing updated"
+    // as a real failure so it surfaces instead of hiding as a false success.
+    const updatedRows = await resp.json().catch(() => []);
+    if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "No profile matched that id — status was not changed. The user list may be out of date; try refreshing and approving again." })
+      };
+    }
+
+    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: true, profile: updatedRows[0] }) };
   }
 
   return { statusCode: 405, body: "Method Not Allowed" };
