@@ -80,6 +80,7 @@
         <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
       </button>
       <button id="newChatBtn" class="new-chat-btn" type="button">New chat</button>
+      <a id="adminLink" class="admin-link" href="admin.html" hidden>Admin</a>
       <div id="userPill" class="user-pill" hidden>
         <span class="user-pill-name" id="userPillName"></span>
         <button id="logoutBtn" type="button">Log out</button>
@@ -127,6 +128,18 @@
     <p>A personal banking &amp; finance study assistant, grounded in CIBN-centered course packs — Digital Banking, Banking Law &amp; Practice, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, and Monetary Policy. Answers are drawn from the loaded study packs first, with clear general-knowledge explanations where a course pack doesn't cover a topic.</p>
     <h3>Founder</h3>
     <p><strong>Adedeji Mayowa</strong> is a Finance student at Lagos State University (LASU), a member of the Chartered Institute of Bankers of Nigeria (CIBN), Founder and Head Tutor at Determined Minds, a mentor with "The Better Version of Mayorcity," and Owner &amp; CEO of Mayorcity Emart. Mayorcity B&amp;F AI was built to give fellow banking &amp; finance students a study companion grounded in their own course material.</p>
+  </div>
+</div>
+
+<div id="statusPanel" class="status-panel" hidden>
+  <div class="status-card">
+    <svg class="glyph-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+      <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
+      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#C9A66B" text-anchor="middle">MB</text>
+    </svg>
+    <h2 id="statusPanelTitle">Account pending</h2>
+    <p id="statusPanelText">Your account is awaiting admin approval. Check back soon.</p>
+    <button id="statusPanelLogoutBtn" class="btn btn-secondary" type="button">Log out</button>
   </div>
 </div>
 
@@ -193,6 +206,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pill = document.getElementById('userPill');
   const pillName = document.getElementById('userPillName');
   const logoutBtn = document.getElementById('logoutBtn');
+  const adminLink = document.getElementById('adminLink');
+  const statusPanel = document.getElementById('statusPanel');
+  const statusPanelTitle = document.getElementById('statusPanelTitle');
+  const statusPanelText = document.getElementById('statusPanelText');
+  const statusPanelLogoutBtn = document.getElementById('statusPanelLogoutBtn');
 
   if (profile) {
     pillName.textContent = profile.name;
@@ -200,11 +218,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   pill.hidden = false;
 
-  logoutBtn.addEventListener('click', async () => {
-    logoutBtn.disabled = true;
+  if (profile && profile.is_admin) {
+    adminLink.hidden = false;
+  }
+
+  const doLogout = async () => {
     await signOutStudent();
     window.location.replace('welcome.html');
-  });
+  };
+  logoutBtn.addEventListener('click', () => { logoutBtn.disabled = true; doLogout(); });
+  statusPanelLogoutBtn.addEventListener('click', () => { statusPanelLogoutBtn.disabled = true; doLogout(); });
+
+  // Gate chat access on the account's approval status. This mirrors what chat.js
+  // enforces server-side — this is just so a pending/rejected student sees a clear
+  // message instead of a confusing error the first time they try to send something.
+  if (profile && profile.status !== 'approved') {
+    document.body.classList.add('account-gated');
+    if (profile.status === 'rejected') {
+      statusPanelTitle.textContent = 'Account access declined';
+      statusPanelText.textContent = "Your account access was declined. If you believe this is a mistake, please contact the admin.";
+    } else {
+      statusPanelTitle.textContent = 'Account pending approval';
+      statusPanelText.textContent = `Hi ${profile.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
+    }
+    statusPanel.hidden = false;
+  }
 });
 </script>
 <script src="js/app.js" defer></script>
