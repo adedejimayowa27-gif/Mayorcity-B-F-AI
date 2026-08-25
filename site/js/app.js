@@ -37,6 +37,22 @@ function retrieve(query, topN=9){
   return scored.slice(0, topN).map(x => x.c);
 }
 
+/* ---------- Admin-uploaded knowledge base (merged into the same KB array/retrieve()
+   pool as the built-in study packs from js/kb-parts/) ---------- */
+window.KB = window.KB || [];
+const KB_EXTRA_READY = (async function loadExtraKB(){
+  try{
+    if(typeof supabaseClient === 'undefined') return;
+    const { data, error } = await supabaseClient
+      .from('kb_chunks')
+      .select('source, subject, priority, text');
+    if(error || !data || !data.length) return;
+    window.KB = window.KB.concat(data);
+  }catch(e){
+    console.error('Failed to load admin-uploaded knowledge base chunks:', e);
+  }
+})();
+
 /* ---------- System prompt ---------- */
 
 const SYSTEM_BASE = `You are Mayorcity B&F AI, a personal banking & finance assistant. Your specialism is Banking & Finance, and you also cover Ethics & Corporate Governance, Accounting, Insurance, Economics, Mathematics of Finance, Monetary Policy, Public Administration, and Law, using the student's own course materials.
@@ -823,6 +839,11 @@ async function ask(question, opts){
   inputEl.disabled = true;
   addTyping();
 
+  // Give the admin-uploaded KB a moment to finish loading (usually already done by
+  // the time anyone types) before retrieving, so even a first message can match
+  // freshly-uploaded material — but never block chat indefinitely if it's slow/down.
+  try{ await Promise.race([KB_EXTRA_READY, new Promise(res => setTimeout(res, 3000))]); }catch(e){ /* ignore */ }
+
   const chunks = retrieve(q, 9);
   const attachedText = attachedFile && attachedFile.type === 'text' ? attachedFile.text : null;
   const attachedName = attachedFile && attachedFile.type === 'text' ? attachedFile.name : null;
@@ -834,9 +855,13 @@ async function ask(question, opts){
   }));
 
   try{
+    const accessToken = await getAccessToken();
     const resp = await fetch("/.netlify/functions/chat", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? {"Authorization": "Bearer " + accessToken} : {})
+      },
       body: JSON.stringify({
         system: system,
         messages: history.slice(-10),
@@ -862,6 +887,10 @@ async function ask(question, opts){
     let errMsg = "Something went wrong reaching the model. Please check your connection and try again.";
     if(err && err.status === 429){
       errMsg = "The assistant is handling a lot of requests right now — please wait a few seconds and try again.";
+    } else if(err && err.status === 403){
+      errMsg = "Your account isn't approved for chat yet. Please wait for admin approval, or contact the admin if you believe this is a mistake.";
+    } else if(err && err.status === 401){
+      errMsg = "Your session has expired — please log in again.";
     } else if(err && err.status >= 500){
       errMsg = "The study assistant's server had a hiccup on that request. Please try again in a moment.";
     } else if(err && err.status === 400){
