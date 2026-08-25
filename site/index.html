@@ -232,16 +232,48 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Gate chat access on the account's approval status. This mirrors what chat.js
   // enforces server-side — this is just so a pending/rejected student sees a clear
   // message instead of a confusing error the first time they try to send something.
-  if (profile && profile.status !== 'approved') {
+  //
+  // While gated, we poll the profile in the background so that once an admin
+  // approves (or un-rejects) the account, the panel clears itself immediately —
+  // the student doesn't have to know to refresh the page.
+  const STATUS_POLL_MS = 8000;
+  let statusPollTimer = null;
+
+  const showGate = (p) => {
     document.body.classList.add('account-gated');
-    if (profile.status === 'rejected') {
+    if (p.status === 'rejected') {
       statusPanelTitle.textContent = 'Account access declined';
       statusPanelText.textContent = "Your account access was declined. If you believe this is a mistake, please contact the admin.";
     } else {
       statusPanelTitle.textContent = 'Account pending approval';
-      statusPanelText.textContent = `Hi ${profile.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
+      statusPanelText.textContent = `Hi ${p.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
     }
     statusPanel.hidden = false;
+  };
+
+  const clearGate = () => {
+    document.body.classList.remove('account-gated');
+    statusPanel.hidden = true;
+    if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; }
+  };
+
+  const pollStatus = async () => {
+    const fresh = await getCurrentProfile();
+    if (fresh && fresh.status === 'approved') {
+      clearGate();
+    } else if (fresh) {
+      showGate(fresh); // status may have flipped between pending/rejected — refresh the message
+    }
+  };
+
+  if (profile && profile.status !== 'approved') {
+    showGate(profile);
+    statusPollTimer = setInterval(pollStatus, STATUS_POLL_MS);
+    // Also re-check the moment the tab regains focus/visibility, so a student who
+    // switches back after being approved sees it clear without waiting for the timer.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && statusPollTimer) pollStatus();
+    });
   }
 });
 </script>
