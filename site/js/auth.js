@@ -109,7 +109,7 @@ async function getCurrentProfile() {
   if (!session) return null;
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, name, matric_number, status, is_admin")
+    .select("id, name, matric_number, status, is_admin, current_streak, longest_streak")
     .eq("id", session.user.id)
     .single();
   if (error) return null;
