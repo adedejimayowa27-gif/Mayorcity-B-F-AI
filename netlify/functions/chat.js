@@ -2,6 +2,12 @@
 // Proxies chat requests to the Groq API (OpenAI-compatible) so the API key never reaches the browser.
 // Set GROQ_API_KEY in your Netlify site's Environment Variables (Site settings → Environment variables).
 // Get a key at https://console.groq.com/keys
+//
+// Also requires the caller to be a logged-in, admin-approved student (see
+// lib/supabase-admin.js) — this is the real enforcement point for the approve/reject
+// gate, since anything checked only in the browser could be bypassed.
+
+const { requireApprovedUser, incrementMessageCount } = require("./lib/supabase-admin");
 
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 // Groq's vision-capable lineup changes often; qwen/qwen3.6-27b is current as of Aug 2026 but is a
@@ -12,6 +18,11 @@ const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
+  }
+
+  const auth = await requireApprovedUser(event);
+  if (auth.error) {
+    return { statusCode: auth.error.statusCode, body: JSON.stringify({ error: auth.error.message }) };
   }
 
   const apiKey = process.env.GROQ_API_KEY;
@@ -82,6 +93,8 @@ exports.handler = async function (event) {
     }
 
     const text = (data?.choices?.[0]?.message?.content || "").trim();
+
+    await incrementMessageCount(auth.userId);
 
     return {
       statusCode: 200,
