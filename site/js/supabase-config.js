@@ -13,5 +13,11 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false
+  },
+  global: {
+    // Without this, the browser can silently reuse a cached GET response (e.g. an old
+    // "pending" profile status) instead of asking Supabase again — so admin approvals
+    // etc. can appear not to have taken effect even though the database is correct.
+    fetch: (input, init) => fetch(input, { ...init, cache: "no-store" })
   }
 });
