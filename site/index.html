@@ -79,6 +79,8 @@
         <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
       </button>
+      <span id="streakBadge" class="streak-badge" hidden>&#128293; <span id="streakCount">0</span></span>
+      <a id="quizLink" class="quiz-link" href="quiz.html" hidden>Quiz</a>
       <button id="newChatBtn" class="new-chat-btn" type="button">New chat</button>
       <a id="adminLink" class="admin-link" href="admin.html" hidden>Admin</a>
       <div id="userPill" class="user-pill" hidden>
@@ -222,6 +224,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     adminLink.hidden = false;
   }
 
+  const quizLink = document.getElementById('quizLink');
+  const streakBadge = document.getElementById('streakBadge');
+  const streakCount = document.getElementById('streakCount');
+  if (profile && profile.status === 'approved') {
+    quizLink.hidden = false;
+    if (profile.current_streak > 0) {
+      streakCount.textContent = profile.current_streak;
+      streakBadge.hidden = false;
+    }
+  }
+
   const doLogout = async () => {
     await signOutStudent();
     window.location.replace('welcome.html');
@@ -232,48 +245,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Gate chat access on the account's approval status. This mirrors what chat.js
   // enforces server-side — this is just so a pending/rejected student sees a clear
   // message instead of a confusing error the first time they try to send something.
-  //
-  // While gated, we poll the profile in the background so that once an admin
-  // approves (or un-rejects) the account, the panel clears itself immediately —
-  // the student doesn't have to know to refresh the page.
-  const STATUS_POLL_MS = 8000;
-  let statusPollTimer = null;
-
-  const showGate = (p) => {
+  if (profile && profile.status !== 'approved') {
     document.body.classList.add('account-gated');
-    if (p.status === 'rejected') {
+    if (profile.status === 'rejected') {
       statusPanelTitle.textContent = 'Account access declined';
       statusPanelText.textContent = "Your account access was declined. If you believe this is a mistake, please contact the admin.";
     } else {
       statusPanelTitle.textContent = 'Account pending approval';
-      statusPanelText.textContent = `Hi ${p.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
+      statusPanelText.textContent = `Hi ${profile.name || 'there'} — your account is awaiting admin approval. You'll be able to start chatting as soon as it's approved. Check back soon.`;
     }
     statusPanel.hidden = false;
-  };
-
-  const clearGate = () => {
-    document.body.classList.remove('account-gated');
-    statusPanel.hidden = true;
-    if (statusPollTimer) { clearInterval(statusPollTimer); statusPollTimer = null; }
-  };
-
-  const pollStatus = async () => {
-    const fresh = await getCurrentProfile();
-    if (fresh && fresh.status === 'approved') {
-      clearGate();
-    } else if (fresh) {
-      showGate(fresh); // status may have flipped between pending/rejected — refresh the message
-    }
-  };
-
-  if (profile && profile.status !== 'approved') {
-    showGate(profile);
-    statusPollTimer = setInterval(pollStatus, STATUS_POLL_MS);
-    // Also re-check the moment the tab regains focus/visibility, so a student who
-    // switches back after being approved sees it clear without waiting for the timer.
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && statusPollTimer) pollStatus();
-    });
   }
 });
 </script>
