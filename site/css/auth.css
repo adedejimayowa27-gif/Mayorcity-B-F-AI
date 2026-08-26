@@ -133,6 +133,109 @@ body.auth-body{
 }
 .info-card p strong{ color:var(--ink); }
 
+/* ---------- Story book (welcome.html — merged About + Founder) ---------- */
+.story-book-section{ width:100%; display:flex; justify-content:center; }
+.book-wrap{
+  perspective:1800px;
+  width:100%;
+  max-width:600px;
+  padding:6px 0 10px;
+}
+.book{
+  position:relative;
+  width:100%;
+  min-height:200px;
+  cursor:pointer;
+  transform-style:preserve-3d;
+  -webkit-tap-highlight-color:transparent;
+}
+.book:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:4px; border-radius:var(--radius-lg); }
+
+.book-pages{
+  position:relative;
+  background: var(--card-bg);
+  border:1px solid var(--card-line);
+  border-radius: var(--radius-lg);
+  padding:26px 28px 24px;
+  box-shadow: var(--shadow-md);
+  opacity:0;
+  transform: translateX(8px);
+  transition: opacity .5s ease .35s, transform .5s ease .35s;
+}
+.book-pages h3{
+  font-family:var(--display);
+  font-style:italic;
+  font-weight:400;
+  font-size:19px;
+  margin:0 0 10px;
+  color: var(--gold-on-paper, var(--gold));
+}
+.book-pages p{ margin:0; color:var(--ink-soft); font-size:14px; line-height:1.65; }
+.book-pages p strong{ color:var(--ink); }
+.book-close{
+  display:none;
+  appearance:none; background:transparent; border:none;
+  margin-top:16px; padding:0;
+  font-family:var(--sans); font-size:12px; letter-spacing:.02em;
+  color:var(--text-faint); cursor:pointer;
+}
+.book-close:hover{ color:var(--gold-bright); }
+
+.book-cover{
+  position:absolute; inset:0;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 15% 8%, rgba(228,198,140,0.13), transparent 60%),
+    linear-gradient(155deg, #1D1B20 0%, #141317 55%, #0A090B 100%);
+  border:1px solid var(--line-gold);
+  box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(201,166,107,0.06);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  transform-origin:left center;
+  transform: rotateY(0deg);
+  transition: transform .9s cubic-bezier(.22,1,.36,1), box-shadow .9s ease;
+  backface-visibility:hidden;
+  animation: bookCoverGlow 3.6s ease-in-out infinite;
+}
+.book-cover::before{
+  content:'';
+  position:absolute; left:0; top:6px; bottom:6px; width:10px;
+  background:linear-gradient(90deg, rgba(0,0,0,0.55), transparent);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+.book-cover-mark{ width:42px; height:42px; }
+.book-cover-title{
+  font-family:var(--display); font-style:italic; font-size:22px;
+  color:var(--gold-bright); margin:4px 0 0;
+}
+.book-cover-hint{
+  font-family:var(--sans); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-faint); margin:0;
+}
+
+.book:not(.open):hover .book-cover,
+.book:not(.open):focus-visible .book-cover{
+  transform: rotateY(-10deg);
+}
+
+.book.open{ cursor:default; }
+.book.open .book-cover{
+  transform: rotateY(-155deg);
+  box-shadow:none;
+  pointer-events:none;
+  animation:none;
+}
+.book.open .book-pages{ opacity:1; transform:translateX(0); }
+.book.open .book-close{ display:inline-flex; }
+
+@keyframes bookCoverGlow{
+  0%, 100%{ box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(201,166,107,0.06); }
+  50%{ box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(201,166,107,0.06), 0 0 26px rgba(201,166,107,0.16); }
+}
+@media (prefers-reduced-motion: reduce){
+  .book-cover{ animation:none; transition-duration:.2s; }
+  .book-pages{ transition-duration:.2s; }
+}
+
 /* ---------- Auth cards (login / signup) ---------- */
 .auth-card-wrap{
   width:100%;
