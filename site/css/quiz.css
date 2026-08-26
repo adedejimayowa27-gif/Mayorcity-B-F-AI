@@ -84,12 +84,32 @@
 }
 #view-quiz .quiz-progress{ font-size:12.5px; color:var(--text-faint); }
 
+#questionsContainer{ perspective: 1400px; }
+
 .q-card{
   background: var(--card-bg);
   border:1px solid var(--card-line);
   border-radius: var(--radius-lg);
   padding:20px 20px 16px;
   margin-bottom:16px;
+  transform-style: preserve-3d;
+  animation: qCardTurnIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes qCardTurnIn{
+  from{ opacity:0; transform: rotateY(35deg) translateX(24px); }
+  to  { opacity:1; transform: rotateY(0deg) translateX(0); }
+}
+.q-card.marked{
+  animation: qCardFlipReveal .5s ease-in-out;
+}
+@keyframes qCardFlipReveal{
+  0%  { transform: rotateY(0deg); }
+  50% { transform: rotateY(90deg); }
+  100%{ transform: rotateY(0deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .q-card{ animation:none; }
+  .q-card.marked{ animation:none; }
 }
 .q-card .q-num{ font-size:11.5px; font-weight:700; color:var(--gold-on-paper, var(--gold)); text-transform:uppercase; letter-spacing:.3px; margin-bottom:6px; }
 .q-card .q-text{ font-size:15px; color:var(--ink); font-weight:600; line-height:1.5; margin-bottom:14px; }
