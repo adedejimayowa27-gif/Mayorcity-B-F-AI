@@ -854,26 +854,59 @@ async function ask(question, opts){
     excerpt: (c.text || '').replace(/\s+/g, ' ').trim().slice(0, 260)
   }));
 
-  try{
+  // Sends the chat request with a client-side timeout so a stalled connection surfaces as a
+  // clear, retryable error instead of hanging indefinitely. Transient failures (timeouts,
+  // dropped connections, 502/503/504 from the function) are retried once automatically before
+  // anything is shown to the user — this is what most "Something went wrong reaching the model"
+  // cases used to be: a single blip that a retry would have fixed anyway.
+  async function sendChatRequest(){
     const accessToken = await getAccessToken();
-    const resp = await fetch("/.netlify/functions/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(accessToken ? {"Authorization": "Bearer " + accessToken} : {})
-      },
-      body: JSON.stringify({
-        system: system,
-        messages: history.slice(-10),
-        image: attachedImage || undefined
-      })
-    });
-    if(!resp.ok){
-      const e = new Error("Server responded with status " + resp.status);
-      e.status = resp.status;
-      throw e;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    try{
+      const resp = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? {"Authorization": "Bearer " + accessToken} : {})
+        },
+        body: JSON.stringify({
+          system: system,
+          messages: history.slice(-10),
+          image: attachedImage || undefined
+        }),
+        signal: controller.signal
+      });
+      if(!resp.ok){
+        const e = new Error("Server responded with status " + resp.status);
+        e.status = resp.status;
+        throw e;
+      }
+      return await resp.json();
+    }finally{
+      clearTimeout(timeoutId);
     }
-    const data = await resp.json();
+  }
+
+  function isTransient(err){
+    if(err && err.name === 'AbortError') return true;
+    if(err && !err.status) return true; // network drop, no response at all
+    if(err && (err.status === 502 || err.status === 503 || err.status === 504)) return true;
+    return false;
+  }
+
+  try{
+    let data;
+    try{
+      data = await sendChatRequest();
+    }catch(err){
+      if(isTransient(err)){
+        await new Promise(res => setTimeout(res, 800));
+        data = await sendChatRequest();
+      }else{
+        throw err;
+      }
+    }
     removeTyping();
     let text = "Sorry, I couldn't generate a response.";
     if(data && data.content){
