@@ -81,7 +81,7 @@ function renderQuiz(){
 
   const container = document.getElementById('questionsContainer');
   container.innerHTML = currentQuestions.map((q, qi) => `
-    <div class="q-card" data-qi="${qi}">
+    <div class="q-card" data-qi="${qi}" style="animation-delay:${Math.min(qi * 70, 500)}ms">
       <div class="q-num">Question ${qi + 1} of ${currentQuestions.length}</div>
       <div class="q-text">${escapeHtml(q.question)}</div>
       <div class="q-options">
