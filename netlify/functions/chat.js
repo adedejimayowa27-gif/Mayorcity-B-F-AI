@@ -69,6 +69,16 @@ exports.handler = async function (event) {
 
   const model = image ? GROQ_VISION_MODEL : GROQ_MODEL;
 
+  // Netlify kills synchronous functions after a hard execution limit (10s on most plans).
+  // If Groq is slow to respond, that hard kill happens mid-request with no response body at
+  // all, so the browser just sees a dropped connection and can't tell what went wrong — that's
+  // what was showing up client-side as the generic "Something went wrong reaching the model"
+  // message so often. Aborting the upstream call ourselves well before that limit lets us
+  // return a clean, specific error instead, and gives the client something to retry against.
+  const GROQ_TIMEOUT_MS = 8500;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
+
   try {
     const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -80,7 +90,8 @@ exports.handler = async function (event) {
         model: model,
         messages: chatMessages,
         max_completion_tokens: 1500
-      })
+      }),
+      signal: controller.signal
     });
 
     const data = await resp.json();
@@ -102,9 +113,17 @@ exports.handler = async function (event) {
       body: JSON.stringify({ content: [{ text: text || "Sorry, I couldn't generate a response." }] })
     };
   } catch (err) {
+    if (err.name === "AbortError") {
+      return {
+        statusCode: 504,
+        body: JSON.stringify({ error: "The model took too long to respond. Please try again." })
+      };
+    }
     return {
       statusCode: 502,
       body: JSON.stringify({ error: "Failed to reach Groq API: " + err.message })
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
