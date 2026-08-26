@@ -7,6 +7,7 @@ body.auth-body{
   min-height: 100dvh;
   height: auto;
   align-items: center;
+  perspective: 1800px;
 }
 
 .auth-header{
@@ -40,6 +41,25 @@ body.auth-body{
   align-items:center;
   gap:40px;
   flex:1;
+  transform-origin: right center;
+  transform: rotateY(65deg);
+  opacity:0;
+  transition: transform .55s cubic-bezier(.22,1,.36,1), opacity .5s ease;
+  will-change: transform, opacity;
+  backface-visibility:hidden;
+}
+.auth-main.pt-ready{
+  transform: rotateY(0deg);
+  opacity:1;
+}
+.auth-main.pt-exit{
+  transform-origin: left center;
+  transform: rotateY(-65deg);
+  opacity:0;
+  transition: transform .4s cubic-bezier(.4,0,1,1), opacity .35s ease;
+}
+@media (prefers-reduced-motion: reduce){
+  .auth-main{ transform:none; opacity:1; transition:none; }
 }
 
 /* ---------- Welcome / hero ---------- */
