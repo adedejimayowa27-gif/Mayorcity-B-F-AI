@@ -174,6 +174,21 @@ document.getElementById('docsList') && document.getElementById('docsList').addEv
   }
 });
 
+// Kept in sync with MAX_DOCUMENT_LENGTH in netlify/functions/admin-kb.js.
+const MAX_DOC_TEXT_LENGTH = 2000000;
+
+// Live character count while typing/pasting, so admins can see how close they are
+// to the limit on large uploads (study packs pasted in can easily run past 1M characters).
+const docTextArea = document.getElementById('docText');
+const docTextHint = document.getElementById('docTextHint');
+docTextArea && docTextArea.addEventListener('input', () => {
+  const len = docTextArea.value.length;
+  if (!len) { docTextHint.innerHTML = '&nbsp;'; return; }
+  const over = len > MAX_DOC_TEXT_LENGTH;
+  docTextHint.textContent = `${len.toLocaleString()} characters${over ? ` — over the ${MAX_DOC_TEXT_LENGTH.toLocaleString()} limit, please split this into smaller parts` : ''}.`;
+  docTextHint.style.color = over ? 'var(--danger, #c0392b)' : '';
+});
+
 // File upload fills the textarea with its text content (plain text / markdown only).
 const docFileInput = document.getElementById('docFile');
 docFileInput && docFileInput.addEventListener('change', () => {
@@ -186,7 +201,11 @@ docFileInput && docFileInput.addEventListener('change', () => {
   const reader = new FileReader();
   reader.onload = () => {
     textarea.value = String(reader.result || '');
-    document.getElementById('docTextHint').textContent = `Loaded ${textarea.value.length.toLocaleString()} characters from ${file.name}.`;
+    const len = textarea.value.length;
+    const over = len > MAX_DOC_TEXT_LENGTH;
+    const hintEl = document.getElementById('docTextHint');
+    hintEl.textContent = `Loaded ${len.toLocaleString()} characters from ${file.name}.${over ? ` That's over the ${MAX_DOC_TEXT_LENGTH.toLocaleString()} limit — please split it into smaller parts.` : ''}`;
+    hintEl.style.color = over ? 'var(--danger, #c0392b)' : '';
     if(!titleInput.value.trim()){
       titleInput.value = file.name.replace(/\.(txt|md)$/i, '');
     }
@@ -210,6 +229,11 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
   if(!title){ errorEl.textContent = 'Please enter a title.'; errorEl.classList.add('show'); return; }
   if(!text){ errorEl.textContent = 'Please paste some text or choose a file.'; errorEl.classList.add('show'); return; }
+  if(text.length > MAX_DOC_TEXT_LENGTH){
+    errorEl.textContent = `That document is too large (${text.length.toLocaleString()} characters, limit ~${MAX_DOC_TEXT_LENGTH.toLocaleString()}). Try splitting it into smaller parts.`;
+    errorEl.classList.add('show');
+    return;
+  }
 
   btn.disabled = true;
   const originalLabel = btn.textContent;
