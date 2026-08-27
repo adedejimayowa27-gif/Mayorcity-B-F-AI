@@ -44,15 +44,39 @@
 
 <main class="auth-main">
   <section class="hero">
-    <svg class="glyph-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
-      <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
-      <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#C9A66B" text-anchor="middle">MB</text>
-    </svg>
-    <h2>Your Banking &amp; Finance study companion</h2>
-    <p class="lede">Grounded in your CIBN-centered course packs — Digital Banking, Banking Law &amp; Practice, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, and Monetary Policy. Sign in with your matric number to start asking questions, generating practice questions from your notes, and picking up right where you left off.</p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="login.html">Log in</a>
-      <a class="btn btn-secondary" href="signup.html">Sign up</a>
+    <div class="welcome-book" id="welcomeBook">
+      <div class="wb-page">
+        <svg class="glyph-svg" viewBox="0 0 44 44" role="img" aria-label="Mayorcity B&amp;F AI logo">
+          <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
+          <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#C9A66B" text-anchor="middle">MB</text>
+        </svg>
+        <h2>Your Banking &amp; Finance study companion</h2>
+        <p class="lede">Grounded in your CIBN-centered course packs — Digital Banking, Banking Law &amp; Practice, Finance in Global Markets, Risk &amp; Fintech, Mathematics of Finance, and Monetary Policy. Sign in with your matric number to start asking questions, generating practice questions from your notes, and picking up right where you left off.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="login.html">Log in</a>
+          <a class="btn btn-secondary" href="signup.html">Sign up</a>
+        </div>
+      </div>
+
+      <div class="wb-spine" aria-hidden="true"></div>
+
+      <div class="wb-cover wb-cover-left" aria-hidden="true">
+        <div class="wb-cover-texture"></div>
+      </div>
+      <div class="wb-cover wb-cover-right" aria-hidden="true">
+        <div class="wb-cover-texture"></div>
+      </div>
+
+      <div class="wb-title" aria-hidden="true">
+        <svg class="wb-title-mark" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="20" fill="rgba(201,166,107,0.06)" stroke="#C9A66B" stroke-width="1"/>
+          <text x="22" y="29" font-family="'Instrument Serif', Georgia, serif" font-style="italic" font-size="17" fill="#E4C68C" text-anchor="middle">MB</text>
+        </svg>
+        <p class="wb-title-word">Mayorcity B&amp;F AI</p>
+        <p class="wb-title-hint">opening&hellip;</p>
+      </div>
+
+      <noscript><style>.wb-cover,.wb-title,.wb-spine{display:none!important} .wb-page{opacity:1!important}</style></noscript>
     </div>
   </section>
 
@@ -79,6 +103,7 @@
 </main>
 
 <script src="js/book.js" defer></script>
+<script src="js/welcome-book.js" defer></script>
 
 <script src="js/theme.js" defer></script>
 <script src="js/page-turn.js" defer></script>
