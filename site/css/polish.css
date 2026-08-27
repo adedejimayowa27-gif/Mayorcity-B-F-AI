@@ -1,0 +1,99 @@
+/* site/css/polish.css
+   A finishing-touches layer loaded after style.css / auth.css / quiz.css / admin.css.
+   Adds tactile micro-interactions, a unified focus ring, a gold-tinted text selection,
+   refined scrollbars, gentle card entrances, and other small ambiance touches — without
+   changing any layout, markup, or the existing color system. Everything here is purely
+   additive and safe to remove.
+*/
+
+/* ---------- Selection & tap highlight ---------- */
+::selection{ background: rgba(201,166,107,0.35); color: var(--text); }
+*{ -webkit-tap-highlight-color: transparent; }
+
+/* ---------- Refined scrollbars ---------- */
+*{ scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; }
+::-webkit-scrollbar{ width:9px; height:9px; }
+::-webkit-scrollbar-thumb{
+  background-color: var(--gold-dim);
+  border-radius:5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover{ background-color: var(--gold); background-clip: padding-box; }
+::-webkit-scrollbar-track{ background:transparent; }
+
+/* ---------- Softer, unified focus ring (component-specific rules still win where set) ---------- */
+:focus-visible{
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+/* ---------- Headline rhythm ---------- */
+h1, h2, h3{ text-wrap: balance; }
+
+/* ---------- Tactile buttons & pills: a small lift on hover, a soft press on click ---------- */
+.btn, .icon-btn, .send-btn, .new-chat-btn, .chip, .sugg, .tab-btn, .count-btn,
+.q-option, .btn-sm, .sidebar-new-chat, .sidebar-footer-btn, .attach-btn,
+.file-drop, .regen-btn, .retry-btn, .feedback-btn, .quiz-link, .admin-link,
+.copy-btn{
+  transition: transform .15s cubic-bezier(.2,.8,.2,1), box-shadow .15s ease,
+              background .15s ease, border-color .15s ease, color .15s ease;
+}
+.btn:hover, .send-btn:hover:not(:disabled), .sugg:hover, .chip:hover:not(.active),
+.icon-btn:hover, .new-chat-btn:hover, .count-btn:not(.active):hover, .q-option:hover,
+.btn-sm:hover, .sidebar-new-chat:hover, .attach-btn:hover, .tab-btn:not(.active):hover,
+.regen-btn:hover, .retry-btn:hover, .feedback-btn:hover, .quiz-link:hover, .admin-link:hover{
+  transform: translateY(-1.5px);
+}
+.btn:active, .send-btn:active:not(:disabled), .sugg:active, .chip:active,
+.icon-btn:active, .new-chat-btn:active, .count-btn:active, .q-option:active,
+.btn-sm:active, .attach-btn:active{
+  transform: translateY(0) scale(.98);
+}
+
+/* A touch more glow behind the primary gold actions on hover. */
+.btn-primary:hover, .send-btn:hover:not(:disabled), .install-btn:hover,
+.count-btn.active:hover, .tab-btn.active:hover{
+  box-shadow: var(--shadow-sm), 0 6px 20px rgba(201,166,107,0.22);
+}
+
+/* ---------- Card polish ---------- */
+.user-card, .doc-card, .info-card, .q-card{
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.user-card:hover, .doc-card:hover{ box-shadow: var(--shadow-sm); }
+
+.msg.bot{ box-shadow: 0 2px 12px rgba(0,0,0,0.09), var(--shadow-sm); }
+.msg.user{ box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+
+/* ---------- Gentle entrance for card lists (skipped where a bespoke animation already exists) ---------- */
+@media (prefers-reduced-motion: no-preference){
+  .user-card, .doc-card, .info-card, .setup-card{
+    animation: polishRise .35s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes polishRise{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+}
+
+/* ---------- Ambient glow on brand marks ---------- */
+.glyph-svg, .mark-svg{ filter: drop-shadow(0 2px 6px rgba(201,166,107,0.18)); }
+
+/* ---------- Results score ring: a soft halo to match the gold accent ---------- */
+.results-score{ box-shadow: 0 0 0 6px rgba(201,166,107,0.06), var(--shadow-sm); }
+
+/* ---------- Composer: a touch richer focus glow ---------- */
+.composer textarea:focus{
+  box-shadow: 0 0 0 3px rgba(201,166,107,0.14), var(--shadow-sm);
+}
+
+/* ---------- Reduced motion: fall back to instant, no transform/animation ---------- */
+@media (prefers-reduced-motion: reduce){
+  .btn, .icon-btn, .send-btn, .new-chat-btn, .chip, .sugg, .tab-btn, .count-btn,
+  .q-option, .btn-sm, .sidebar-new-chat, .sidebar-footer-btn, .attach-btn,
+  .file-drop, .regen-btn, .retry-btn, .feedback-btn, .quiz-link, .admin-link,
+  .copy-btn, .user-card, .doc-card, .info-card, .q-card{
+    transition:none !important;
+  }
+}
