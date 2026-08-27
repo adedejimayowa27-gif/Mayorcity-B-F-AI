@@ -10,6 +10,15 @@ const { requireAdmin, restFetch } = require("./lib/supabase-admin");
 const TARGET_CHUNK_SIZE = 1400;   // characters — similar scale to the existing study-pack chunks
 const MAX_DOCUMENT_LENGTH = 2000000; // ~2M characters (~400k words) per upload — comfortably covers 1M+ character documents
 
+// Postgres text columns reject raw NUL bytes (\u0000) outright — and other C0 control
+// characters serve no purpose in study material — so strip them before anything is
+// chunked or saved. This is what actually prevents the "22P05 ... cannot be converted
+// to text" error, regardless of whether the bad bytes came from a mis-read binary file,
+// a copy-paste, or anything else.
+function sanitizeText(text) {
+  return text.replace(/\u0000/g, "").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+}
+
 // Splits text on paragraph breaks, grouping consecutive paragraphs up to ~TARGET_CHUNK_SIZE
 // characters per chunk. Any single paragraph longer than that gets hard-split so nothing
 // is ever dropped.
@@ -65,7 +74,7 @@ exports.handler = async function (event) {
     const title = String(payload.title || "").trim();
     const subject = String(payload.subject || "Uploaded Material").trim() || "Uploaded Material";
     const filename = payload.filename ? String(payload.filename).trim().slice(0, 200) : null;
-    const text = String(payload.text || "").trim();
+    const text = sanitizeText(String(payload.text || "").trim());
 
     if (!title) return { statusCode: 400, body: JSON.stringify({ error: "A title is required." }) };
     if (!text) return { statusCode: 400, body: JSON.stringify({ error: "No document text was provided." }) };
