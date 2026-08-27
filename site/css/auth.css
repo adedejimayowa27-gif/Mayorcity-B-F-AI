@@ -120,6 +120,134 @@ body.auth-body{
 .btn:focus-visible{ outline: 2px solid var(--gold-bright); outline-offset:2px; }
 .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none !important; }
 
+/* ---------- Welcome book (auto-opening cover that reveals the hero) ---------- */
+.welcome-book{
+  position:relative;
+  width:100%;
+  perspective:2200px;
+}
+.wb-page{
+  position:relative;
+  z-index:1;
+  text-align:center;
+  padding: 6px 4px 4px;
+  opacity:0;
+  transform: translateY(6px);
+  transition: opacity .6s ease .15s, transform .6s ease .15s;
+}
+.wb-page .glyph-svg{ width:56px; height:56px; margin-bottom:18px; }
+.wb-page h2{
+  font-family:var(--display);
+  font-style:italic;
+  font-weight:400;
+  font-size:clamp(28px, 5vw, 40px);
+  color:var(--gold-on-paper-bright, var(--gold-bright));
+  margin: 0 0 12px;
+  line-height:1.15;
+}
+.wb-page p.lede{
+  color:var(--text-soft);
+  font-size:15.5px;
+  line-height:1.6;
+  margin:0 0 28px;
+}
+.welcome-book.wb-open .wb-page{ opacity:1; transform:translateY(0); }
+
+.wb-spine{
+  position:absolute;
+  left:50%; top:8px; bottom:8px;
+  width:2px;
+  transform:translateX(-50%);
+  background:linear-gradient(180deg, transparent, rgba(0,0,0,0.6), transparent);
+  z-index:7;
+  opacity:1;
+  transition: opacity .3s ease .55s;
+}
+.welcome-book.wb-open .wb-spine{ opacity:0; }
+
+.wb-cover{
+  position:absolute;
+  top:0; bottom:0;
+  width:50%;
+  background:
+    radial-gradient(140% 160% at 15% 8%, rgba(228,198,140,0.13), transparent 60%),
+    linear-gradient(155deg, #1D1B20 0%, #141317 55%, #0A090B 100%);
+  border:1px solid var(--line-gold);
+  box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(201,166,107,0.06);
+  z-index:6;
+  backface-visibility:hidden;
+  transform-style:preserve-3d;
+  transition: transform 1.1s cubic-bezier(.22,1,.36,1), box-shadow 1.1s ease;
+  overflow:hidden;
+}
+.wb-cover-left{
+  left:0;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border-right:none;
+  transform-origin: left center;
+}
+.wb-cover-right{
+  right:0;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  border-left:none;
+  transform-origin: right center;
+}
+.wb-cover-texture{
+  position:absolute; inset:0;
+}
+.wb-cover-left .wb-cover-texture::before{
+  content:'';
+  position:absolute; right:0; top:6px; bottom:6px; width:10px;
+  background:linear-gradient(270deg, rgba(0,0,0,0.5), transparent);
+}
+.wb-cover-right .wb-cover-texture::before{
+  content:'';
+  position:absolute; left:0; top:6px; bottom:6px; width:10px;
+  background:linear-gradient(90deg, rgba(0,0,0,0.5), transparent);
+}
+
+.welcome-book.wb-open .wb-cover-left{
+  transform: rotateY(-112deg);
+  box-shadow:none;
+}
+.welcome-book.wb-open .wb-cover-right{
+  transform: rotateY(112deg);
+  box-shadow:none;
+}
+.welcome-book.wb-done .wb-cover,
+.welcome-book.wb-done .wb-spine{
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.wb-title{
+  position:absolute; inset:0;
+  z-index:8;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  pointer-events:none;
+  transition: opacity .4s ease;
+}
+.wb-title-mark{ width:44px; height:44px; }
+.wb-title-word{
+  font-family:var(--display); font-style:italic; font-size:23px;
+  color:var(--gold-bright); margin:4px 0 0;
+}
+.wb-title-hint{
+  font-family:var(--sans); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-faint); margin:0;
+}
+.welcome-book.wb-open .wb-title{ opacity:0; }
+
+@keyframes wbSway{
+  0%, 100%{ transform: translateY(0); }
+  50%{ transform: translateY(-3px); }
+}
+.welcome-book:not(.wb-open) .wb-title{ animation: wbSway 2.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce){
+  .wb-cover, .wb-title, .wb-spine, .wb-page{ transition-duration:.01s !important; animation:none !important; }
+}
+
 /* ---------- About / founder cards ---------- */
 .info-cards{
   width:100%;
