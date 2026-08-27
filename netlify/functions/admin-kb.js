@@ -8,7 +8,7 @@
 const { requireAdmin, restFetch } = require("./lib/supabase-admin");
 
 const TARGET_CHUNK_SIZE = 1400;   // characters — similar scale to the existing study-pack chunks
-const MAX_DOCUMENT_LENGTH = 600000; // ~600k characters (~120k words) per upload, plenty for a course pack
+const MAX_DOCUMENT_LENGTH = 2000000; // ~2M characters (~400k words) per upload — comfortably covers 1M+ character documents
 
 // Splits text on paragraph breaks, grouping consecutive paragraphs up to ~TARGET_CHUNK_SIZE
 // characters per chunk. Any single paragraph longer than that gets hard-split so nothing
