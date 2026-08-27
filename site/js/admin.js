@@ -177,6 +177,33 @@ document.getElementById('docsList') && document.getElementById('docsList').addEv
 // Kept in sync with MAX_DOCUMENT_LENGTH in netlify/functions/admin-kb.js.
 const MAX_DOC_TEXT_LENGTH = 2000000;
 
+// Postgres text columns reject raw NUL bytes outright (this is what caused the old
+// "22P05 ... cannot be converted to text" error on PDF uploads — reading a PDF's binary
+// bytes as text produces NULs). Strip those, and other non-printing C0 control chars,
+// from anything that ends up in the textarea. Mirrored server-side in admin-kb.js as a
+// safety net.
+function sanitizeText(text){
+  return String(text || '').replace(/\u0000/g, '').replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+}
+
+// Extracts the text layer from a PDF using pdf.js (loaded via CDN in admin.html).
+// Runs entirely in the browser — the PDF's bytes never get treated as text/UTF-8.
+async function extractPdfText(file){
+  if(typeof pdfjsLib === 'undefined'){
+    throw new Error('PDF support failed to load — try refreshing the page, or paste the text directly.');
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const buf = await file.arrayBuffer();
+  const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+  const pages = [];
+  for(let i = 1; i <= doc.numPages; i++){
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    pages.push(content.items.map(it => it.str).join(' '));
+  }
+  return pages.join('\n\n');
+}
+
 // Live character count while typing/pasting, so admins can see how close they are
 // to the limit on large uploads (study packs pasted in can easily run past 1M characters).
 const docTextArea = document.getElementById('docText');
@@ -189,29 +216,53 @@ docTextArea && docTextArea.addEventListener('input', () => {
   docTextHint.style.color = over ? 'var(--danger, #c0392b)' : '';
 });
 
-// File upload fills the textarea with its text content (plain text / markdown only).
+// File upload fills the textarea with its text content: .pdf goes through pdf.js text
+// extraction, .txt/.md are read as plain text. Either way the result is sanitized before
+// it lands in the textarea.
 const docFileInput = document.getElementById('docFile');
-docFileInput && docFileInput.addEventListener('change', () => {
+docFileInput && docFileInput.addEventListener('change', async () => {
   const file = docFileInput.files && docFileInput.files[0];
   const label = document.getElementById('fileDropLabel');
   const textarea = document.getElementById('docText');
   const titleInput = document.getElementById('docTitle');
+  const hintEl = document.getElementById('docTextHint');
   if(!file) return;
   label.textContent = file.name;
-  const reader = new FileReader();
-  reader.onload = () => {
-    textarea.value = String(reader.result || '');
-    const len = textarea.value.length;
+
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+
+  function applyExtracted(raw, source){
+    const clean = sanitizeText(raw).trim();
+    textarea.value = clean;
+    const len = clean.length;
     const over = len > MAX_DOC_TEXT_LENGTH;
-    const hintEl = document.getElementById('docTextHint');
-    hintEl.textContent = `Loaded ${len.toLocaleString()} characters from ${file.name}.${over ? ` That's over the ${MAX_DOC_TEXT_LENGTH.toLocaleString()} limit — please split it into smaller parts.` : ''}`;
+    hintEl.textContent = `Loaded ${len.toLocaleString()} characters from ${source}.${over ? ` That's over the ${MAX_DOC_TEXT_LENGTH.toLocaleString()} limit — please split it into smaller parts.` : ''}`;
     hintEl.style.color = over ? 'var(--danger, #c0392b)' : '';
     if(!titleInput.value.trim()){
-      titleInput.value = file.name.replace(/\.(txt|md)$/i, '');
+      titleInput.value = file.name.replace(/\.(txt|md|pdf)$/i, '');
     }
-  };
+  }
+
+  if(isPdf){
+    hintEl.innerHTML = '&nbsp;';
+    hintEl.textContent = 'Extracting text from PDF\u2026';
+    try{
+      const raw = await extractPdfText(file);
+      if(!raw.trim()){
+        hintEl.textContent = "Couldn't find any text in that PDF (it may be a scanned image) — try pasting the text directly instead.";
+        return;
+      }
+      applyExtracted(raw, file.name);
+    }catch(err){
+      hintEl.textContent = `Couldn't read that PDF: ${err.message}`;
+    }
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => applyExtracted(String(reader.result || ''), file.name);
   reader.onerror = () => {
-    document.getElementById('docTextHint').textContent = "Couldn't read that file — try pasting the text directly instead.";
+    hintEl.textContent = "Couldn't read that file — try pasting the text directly instead.";
   };
   reader.readAsText(file);
 });
@@ -224,7 +275,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
   const title = document.getElementById('docTitle').value.trim();
   const subject = document.getElementById('docSubject').value.trim() || 'Uploaded Material';
-  const text = document.getElementById('docText').value.trim();
+  const text = sanitizeText(document.getElementById('docText').value).trim();
   const file = docFileInput.files && docFileInput.files[0];
 
   if(!title){ errorEl.textContent = 'Please enter a title.'; errorEl.classList.add('show'); return; }
