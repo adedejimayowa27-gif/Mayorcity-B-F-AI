@@ -46,7 +46,15 @@ const KB_EXTRA_READY = (async function loadExtraKB(){
     const { data, error } = await supabaseClient
       .from('kb_chunks')
       .select('source, subject, priority, text');
-    if(error || !data || !data.length) return;
+    if(error){
+      // Most likely cause: no Row Level Security SELECT policy on kb_chunks for
+      // logged-in users (this read uses the public anon key, unlike the admin
+      // panel's uploads, which go through a server function with the secret key
+      // and so bypass RLS entirely). See supabase-kb-chunks-rls.sql.
+      console.error('Failed to load admin-uploaded knowledge base chunks (check kb_chunks RLS policy):', error);
+      return;
+    }
+    if(!data || !data.length) return;
     window.KB = window.KB.concat(data);
   }catch(e){
     console.error('Failed to load admin-uploaded knowledge base chunks:', e);
