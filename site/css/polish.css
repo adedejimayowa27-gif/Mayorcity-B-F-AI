@@ -96,4 +96,28 @@ h1, h2, h3{ text-wrap: balance; }
   .copy-btn, .user-card, .doc-card, .info-card, .q-card{
     transition:none !important;
   }
+  .book-streak:not([hidden]){ animation:none !important; }
+}
+
+/* ---------- Book streak badge: a little book that gains "pages" with your streak ---------- */
+.book-streak{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  color: var(--gold-bright);
+  font-weight:600;
+  font-size:13px;
+}
+.book-streak-icon{
+  flex-shrink:0;
+  filter: drop-shadow(0 1px 3px rgba(201,166,107,0.35));
+}
+@media (prefers-reduced-motion: no-preference){
+  .book-streak:not([hidden]){
+    animation: bookStreakSettle .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes bookStreakSettle{
+    from{ opacity:0; transform: translateY(-4px) scale(.9); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
 }
