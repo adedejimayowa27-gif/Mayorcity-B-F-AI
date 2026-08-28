@@ -160,6 +160,26 @@ document.getElementById('submitQuizBtn').addEventListener('click', async () => {
 
 /* ---------- Results screen ---------- */
 
+// A quick burst of falling gold coins for a high score (80%+) — pure CSS/JS,
+// no assets, cleans itself up after the animation finishes.
+function goldBurst(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layer = document.createElement('div');
+  layer.className = 'gold-burst-layer';
+  const COINS = 24;
+  for(let i = 0; i < COINS; i++){
+    const coin = document.createElement('span');
+    coin.className = 'gold-coin';
+    coin.style.left = `${Math.random() * 100}%`;
+    coin.style.animationDelay = `${Math.random() * 0.4}s`;
+    coin.style.animationDuration = `${1.6 + Math.random() * 0.9}s`;
+    coin.textContent = Math.random() > 0.5 ? '\u20A6' : '\u25CF'; // Naira sign or a plain coin dot
+    layer.appendChild(coin);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2800);
+}
+
 function showResults(score, total){
   const pct = total ? Math.round((score / total) * 100) : 0;
   document.getElementById('resultFrac').textContent = `${score}/${total}`;
@@ -169,6 +189,8 @@ function showResults(score, total){
   if(pct >= 80) headline.textContent = 'Excellent work!';
   else if(pct >= 50) headline.textContent = 'Good effort!';
   else headline.textContent = 'Keep practicing!';
+
+  if(pct >= 80) goldBurst();
 
   const reviewList = document.getElementById('reviewList');
   reviewList.innerHTML = currentQuestions.map((q, qi) => {
