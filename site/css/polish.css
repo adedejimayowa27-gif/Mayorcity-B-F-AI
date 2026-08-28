@@ -121,3 +121,28 @@ h1, h2, h3{ text-wrap: balance; }
     to{ opacity:1; transform: translateY(0) scale(1); }
   }
 }
+
+/* ---------- Gold coin burst: a quick celebratory rain of coins on a high quiz score ---------- */
+.gold-burst-layer{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+.gold-coin{
+  position: absolute;
+  top: -40px;
+  color: var(--gold-bright);
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(228,198,140,0.6);
+  animation-name: goldCoinFall;
+  animation-timing-function: cubic-bezier(.4,0,.6,1);
+  animation-fill-mode: forwards;
+}
+@keyframes goldCoinFall{
+  0%{ transform: translateY(0) rotate(0deg); opacity: 0; }
+  8%{ opacity: 1; }
+  100%{ transform: translateY(105vh) rotate(360deg); opacity: 0.9; }
+}
