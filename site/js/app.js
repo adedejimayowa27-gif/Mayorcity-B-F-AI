@@ -1,5 +1,63 @@
 /* ---------- Retrieval over the study-pack knowledge base (KB comes from js/kb.js) ---------- */
 
+/* ---------- Text-to-speech: picks the least "robotic" voice the device actually
+   has installed. Most devices ship several voices — the browser's default pick
+   is often the flattest-sounding one, while a much more natural voice (Google's,
+   Apple's premium/enhanced ones, or Microsoft's "Natural"/"Online" voices) is
+   sitting right there unused. This just finds it automatically. ---------- */
+let _ttsBestVoice = null;
+function pickBestVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if(!voices || !voices.length) return null;
+  const english = voices.filter(v => /^en(-|_|$)/i.test(v.lang)) .length ? voices.filter(v => /^en(-|_|$)/i.test(v.lang)) : voices;
+  // Higher-quality voice names to prefer, in priority order, across Chrome/Android,
+  // Safari/iOS/macOS, and Windows/Edge. Anything not matching falls back to the
+  // first available English voice rather than nothing.
+  const preferredNamePatterns = [
+    /natural/i, /neural/i, /enhanced/i, /premium/i,
+    /google us english/i, /google uk english/i, /google.*english/i,
+    /siri/i, /ava/i, /samantha/i, /aria/i, /jenny/i, /guy/i, /online/i
+  ];
+  for(const pattern of preferredNamePatterns){
+    const match = english.find(v => pattern.test(v.name));
+    if(match) return match;
+  }
+  // Fall back to any voice that's explicitly marked as a remote/high-quality
+  // service voice, then finally just the first English voice available.
+  return english.find(v => !v.localService) || english[0] || voices[0];
+}
+if('speechSynthesis' in window){
+  _ttsBestVoice = pickBestVoice();
+  // Voice lists load asynchronously in some browsers (notably Chrome) — refresh
+  // the pick once the full list actually arrives.
+  window.speechSynthesis.onvoiceschanged = () => { _ttsBestVoice = pickBestVoice(); };
+}
+
+// Speaks text sentence-by-sentence instead of as one long utterance. A single
+// long utterance tends to read in a rushed, flat monotone; small natural pauses
+// between sentences (as the browser starts/stops each utterance) sound noticeably
+// less like a robot reading a wall of text.
+function speakNaturally(text, handlers){
+  const clean = text.replace(/[*_#>`]/g, '').replace(/\n{2,}/g, '. ').trim();
+  const sentences = clean.match(/[^.!?]+[.!?]*/g) || [clean];
+  let i = 0;
+  function speakNext(){
+    if(i >= sentences.length){ if(handlers.onend) handlers.onend(); return; }
+    const utter = new SpeechSynthesisUtterance(sentences[i].trim());
+    utter.rate = 0.94;
+    utter.pitch = 1;
+    if(_ttsBestVoice) utter.voice = _ttsBestVoice;
+    utter.onstart = i === 0 ? handlers.onstart : undefined;
+    utter.onerror = handlers.onerror;
+    utter.onend = () => { i++; speakNext(); };
+    window.speechSynthesis.speak(utter);
+  }
+  speakNext();
+}
+
+
+
 const STOPWORDS = new Set(("the a an of and to in on for is are was were be been being this that these those it its as with by from at or not no do does did can could would should will shall may might have has had i you he she we they what which who whom how why when where explain define describe summarize give example examples list compare difference between").split(/\s+/));
 
 function tokenize(s){
@@ -567,21 +625,18 @@ function addMsg(role, text, sources, opts){
           return; // the onend/onerror handler below resets the button
         }
         window.speechSynthesis.cancel(); // stop any other answer currently being read
-        // Strip simple markdown so it isn't read aloud literally (e.g. "asterisk asterisk").
-        const spoken = text.replace(/[*_#>`]/g, '').replace(/\n{2,}/g, '. ');
-        const utter = new SpeechSynthesisUtterance(spoken);
-        utter.rate = 0.98;
-        utter.onstart = () => {
-          listenBtn.innerHTML = '<span class="listen-icon" aria-hidden="true">\u23F9\uFE0F</span> Stop';
-          listenBtn.classList.add('speaking');
-        };
         const reset = () => {
           listenBtn.innerHTML = '<span class="listen-icon" aria-hidden="true">\uD83D\uDD0A</span> Listen';
           listenBtn.classList.remove('speaking');
         };
-        utter.onend = reset;
-        utter.onerror = reset;
-        window.speechSynthesis.speak(utter);
+        speakNaturally(text, {
+          onstart: () => {
+            listenBtn.innerHTML = '<span class="listen-icon" aria-hidden="true">\u23F9\uFE0F</span> Stop';
+            listenBtn.classList.add('speaking');
+          },
+          onend: reset,
+          onerror: reset
+        });
       });
       listenRow.appendChild(listenBtn);
       div.appendChild(listenRow);
