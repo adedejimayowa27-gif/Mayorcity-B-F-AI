@@ -96,30 +96,46 @@ h1, h2, h3{ text-wrap: balance; }
   .copy-btn, .user-card, .doc-card, .info-card, .q-card{
     transition:none !important;
   }
-  .book-streak:not([hidden]){ animation:none !important; }
+  .fire-streak:not([hidden]){ animation:none !important; }
+  .fire-streak:not([hidden]) .fire-streak-icon{ animation:none !important; }
 }
 
-/* ---------- Book streak badge: a little book that gains "pages" with your streak ---------- */
-.book-streak{
+/* ---------- Fire streak badge: a flickering flame that grows hotter with your streak ---------- */
+.fire-streak{
   display:inline-flex;
   align-items:center;
   gap:5px;
   color: var(--gold-bright);
-  font-weight:600;
+  font-weight:700;
   font-size:13px;
 }
-.book-streak-icon{
+.fire-streak-icon{
   flex-shrink:0;
-  filter: drop-shadow(0 1px 3px rgba(201,166,107,0.35));
+  transform-origin: 50% 85%;
 }
 @media (prefers-reduced-motion: no-preference){
-  .book-streak:not([hidden]){
+  .fire-streak:not([hidden]) .fire-streak-icon{
+    animation: fireFlicker 1.1s ease-in-out infinite;
+  }
+  .fire-streak:not([hidden]){
     animation: bookStreakSettle .5s cubic-bezier(.2,.8,.2,1) both;
   }
   @keyframes bookStreakSettle{
     from{ opacity:0; transform: translateY(-4px) scale(.9); }
     to{ opacity:1; transform: translateY(0) scale(1); }
   }
+  @keyframes fireFlicker{
+    0%, 100%{ transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 3px rgba(228,118,28,0.45)); }
+    25%{ transform: scale(1.05, 0.96) rotate(-2deg); filter: drop-shadow(0 0 5px rgba(228,118,28,0.6)); }
+    50%{ transform: scale(0.97, 1.05) rotate(1deg); filter: drop-shadow(0 0 4px rgba(255,210,122,0.55)); }
+    75%{ transform: scale(1.03, 0.98) rotate(-1deg); filter: drop-shadow(0 0 6px rgba(228,118,28,0.6)); }
+  }
+}
+/* Hotter, bigger glow the longer the streak runs. */
+.fire-streak.fire-lvl-2 .fire-streak-icon{ filter: drop-shadow(0 0 6px rgba(228,118,28,0.55)); }
+.fire-streak.fire-lvl-3{ color: #FFD27A; }
+.fire-streak.fire-lvl-3 .fire-streak-icon{
+  filter: drop-shadow(0 0 9px rgba(255,140,40,0.75)) drop-shadow(0 0 3px rgba(255,255,255,0.4));
 }
 
 /* ---------- Gold coin burst: a quick celebratory rain of coins on a high quiz score ---------- */
