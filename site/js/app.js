@@ -554,28 +554,37 @@ function addMsg(role, text, sources, opts){
     div.appendChild(imgBtn);
 
     if('speechSynthesis' in window){
+      const listenRow = document.createElement('div');
+      listenRow.className = 'listen-row';
       const listenBtn = document.createElement('button');
       listenBtn.type = 'button';
-      listenBtn.className = 'copy-btn listen-btn';
-      listenBtn.textContent = 'Listen';
+      listenBtn.className = 'listen-btn';
+      listenBtn.innerHTML = '<span class="listen-icon" aria-hidden="true">\uD83D\uDD0A</span> Listen';
       listenBtn.setAttribute('aria-label', 'Read this answer aloud');
       listenBtn.addEventListener('click', () => {
         if(listenBtn.classList.contains('speaking')){
           window.speechSynthesis.cancel();
-          return; // the 'end'/'cancel' handler below resets the button
+          return; // the onend/onerror handler below resets the button
         }
         window.speechSynthesis.cancel(); // stop any other answer currently being read
         // Strip simple markdown so it isn't read aloud literally (e.g. "asterisk asterisk").
         const spoken = text.replace(/[*_#>`]/g, '').replace(/\n{2,}/g, '. ');
         const utter = new SpeechSynthesisUtterance(spoken);
         utter.rate = 0.98;
-        utter.onstart = () => { listenBtn.textContent = 'Stop'; listenBtn.classList.add('speaking'); };
-        const reset = () => { listenBtn.textContent = 'Listen'; listenBtn.classList.remove('speaking'); };
+        utter.onstart = () => {
+          listenBtn.innerHTML = '<span class="listen-icon" aria-hidden="true">\u23F9\uFE0F</span> Stop';
+          listenBtn.classList.add('speaking');
+        };
+        const reset = () => {
+          listenBtn.innerHTML = '<span class="listen-icon" aria-hidden="true">\uD83D\uDD0A</span> Listen';
+          listenBtn.classList.remove('speaking');
+        };
         utter.onend = reset;
         utter.onerror = reset;
         window.speechSynthesis.speak(utter);
       });
-      div.appendChild(listenBtn);
+      listenRow.appendChild(listenBtn);
+      div.appendChild(listenRow);
     }
 
     if(opts.feedback !== false){
