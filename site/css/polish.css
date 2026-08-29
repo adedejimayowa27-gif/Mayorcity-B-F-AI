@@ -162,3 +162,16 @@ h1, h2, h3{ text-wrap: balance; }
   8%{ opacity: 1; }
   100%{ transform: translateY(105vh) rotate(360deg); opacity: 0.9; }
 }
+
+/* ---------- Listen (text-to-speech) button state ---------- */
+.listen-btn.speaking{
+  color: var(--gold-bright);
+  border-color: var(--line-gold);
+}
+@media (prefers-reduced-motion: no-preference){
+  .listen-btn.speaking{ animation: listenPulse 1.4s ease-in-out infinite; }
+  @keyframes listenPulse{
+    0%, 100%{ opacity: 1; }
+    50%{ opacity: .6; }
+  }
+}
