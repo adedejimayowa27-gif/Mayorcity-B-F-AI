@@ -553,6 +553,31 @@ function addMsg(role, text, sources, opts){
     imgBtn.addEventListener('click', () => saveMessageAsImage(div, imgBtn));
     div.appendChild(imgBtn);
 
+    if('speechSynthesis' in window){
+      const listenBtn = document.createElement('button');
+      listenBtn.type = 'button';
+      listenBtn.className = 'copy-btn listen-btn';
+      listenBtn.textContent = 'Listen';
+      listenBtn.setAttribute('aria-label', 'Read this answer aloud');
+      listenBtn.addEventListener('click', () => {
+        if(listenBtn.classList.contains('speaking')){
+          window.speechSynthesis.cancel();
+          return; // the 'end'/'cancel' handler below resets the button
+        }
+        window.speechSynthesis.cancel(); // stop any other answer currently being read
+        // Strip simple markdown so it isn't read aloud literally (e.g. "asterisk asterisk").
+        const spoken = text.replace(/[*_#>`]/g, '').replace(/\n{2,}/g, '. ');
+        const utter = new SpeechSynthesisUtterance(spoken);
+        utter.rate = 0.98;
+        utter.onstart = () => { listenBtn.textContent = 'Stop'; listenBtn.classList.add('speaking'); };
+        const reset = () => { listenBtn.textContent = 'Listen'; listenBtn.classList.remove('speaking'); };
+        utter.onend = reset;
+        utter.onerror = reset;
+        window.speechSynthesis.speak(utter);
+      });
+      div.appendChild(listenBtn);
+    }
+
     if(opts.feedback !== false){
       const feedbackRow = document.createElement('div');
       feedbackRow.className = 'feedback-row';
@@ -847,6 +872,7 @@ async function ask(question, opts){
   opts = opts || {};
   if(!question || !question.trim()) return;
   const q = question.trim();
+  if('speechSynthesis' in window) window.speechSynthesis.cancel(); // don't talk over a new answer
   if(!activeConvId){
     // First message from a fresh visitor (or after deleting every conversation) —
     // create the conversation on demand instead of showing an empty one upfront.
