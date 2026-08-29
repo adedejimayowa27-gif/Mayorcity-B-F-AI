@@ -310,6 +310,21 @@ const emptyState = document.getElementById('emptyState');
 const headerEl = document.getElementById('appHeader');
 const newChatBtn = document.getElementById('newChatBtn');
 const attachBtn = document.getElementById('attachBtn');
+
+/* ---------- Draft autosave ----------
+   Restores an in-progress, unsent question after an accidental refresh, closed
+   tab, or crash — a half-typed exam question is genuinely annoying to lose. */
+const DRAFT_KEY = 'mb_draft_message';
+try{
+  const savedDraft = localStorage.getItem(DRAFT_KEY);
+  if(savedDraft){
+    inputEl.value = savedDraft;
+    requestAnimationFrame(() => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+    });
+  }
+}catch(e){ /* localStorage unavailable — draft autosave just won't persist */ }
 const fileInput = document.getElementById('fileInput');
 const attachRow = document.getElementById('attachRow');
 const attachName = document.getElementById('attachName');
@@ -843,6 +858,7 @@ async function ask(question, opts){
   }
   inputEl.value = '';
   inputEl.style.height = 'auto';
+  try{ localStorage.removeItem(DRAFT_KEY); }catch(e){ /* ignore */ }
   sendBtn.disabled = true;
   inputEl.disabled = true;
   addTyping();
@@ -964,6 +980,10 @@ inputEl.addEventListener('keydown', (e) => {
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
   inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+  try{
+    if(inputEl.value.trim()) localStorage.setItem(DRAFT_KEY, inputEl.value);
+    else localStorage.removeItem(DRAFT_KEY);
+  }catch(e){ /* ignore */ }
 });
 document.querySelectorAll('.sugg').forEach(el => {
   el.addEventListener('click', () => ask(el.dataset.q));
