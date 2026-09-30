@@ -1,6 +1,6 @@
 // api/chat.js
 // Proxies chat requests to the Groq API (OpenAI-compatible) so the API key never reaches the browser.
-// Set GROQ_API_KEY in your Netlify site's Environment Variables (Site settings → Environment variables).
+// Set GROQ_API_KEY in your Vercel project's Environment Variables (Settings → Environment Variables).
 // Get a key at https://console.groq.com/keys
 //
 // Also requires the caller to be a logged-in, admin-approved student (see
@@ -75,7 +75,9 @@ const handler = async function (event) {
   // what was showing up client-side as the generic "Something went wrong reaching the model"
   // message so often. Aborting the upstream call ourselves well before that limit lets us
   // return a clean, specific error instead, and gives the client something to retry against.
-  const GROQ_TIMEOUT_MS = 8500;
+  // On Vercel this function is allowed to run 30s (see maxDuration in vercel.json), so we give
+  // Groq 25s and still return a clean error before the platform cuts the request off.
+  const GROQ_TIMEOUT_MS = 25000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
 
