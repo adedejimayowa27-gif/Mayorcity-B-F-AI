@@ -43,7 +43,7 @@ async function apiCall(path, opts){
 async function loadUsers(){
   const listEl = document.getElementById('usersList');
   try{
-    const data = await apiCall('/.netlify/functions/admin-users');
+    const data = await apiCall('/api/admin-users');
     allUsers = data.users || [];
     updateCounts();
     renderUsers();
@@ -99,7 +99,7 @@ async function handleUserAction(id, status, btn){
   const allBtns = card.querySelectorAll('button');
   allBtns.forEach(b => b.disabled = true);
   try{
-    const result = await apiCall('/.netlify/functions/admin-users', { method: 'POST', body: { id, status } });
+    const result = await apiCall('/api/admin-users', { method: 'POST', body: { id, status } });
     // Trust what the server confirms was actually written (result.profile.status), not
     // just the status we asked for — if the server ever no-ops without erroring, this
     // stops the badge from silently drifting out of sync with the real database row.
@@ -133,7 +133,7 @@ document.getElementById('tabRow').addEventListener('click', (e) => {
 async function loadDocuments(){
   const listEl = document.getElementById('docsList');
   try{
-    const data = await apiCall('/.netlify/functions/admin-kb');
+    const data = await apiCall('/api/admin-kb');
     renderDocuments(data.documents || []);
   }catch(e){
     listEl.innerHTML = `<p class="admin-empty">Couldn't load documents: ${escapeHtml(e.message)}</p>`;
@@ -166,7 +166,7 @@ document.getElementById('docsList') && document.getElementById('docsList').addEv
   if(!confirm(`Delete "${title}" from the knowledge base? This can't be undone.`)) return;
   btn.disabled = true;
   try{
-    await apiCall('/.netlify/functions/admin-kb', { method: 'DELETE', body: { id } });
+    await apiCall('/api/admin-kb', { method: 'DELETE', body: { id } });
     card.remove();
   }catch(e){
     alert('Failed to delete: ' + e.message);
@@ -291,7 +291,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   btn.innerHTML = '<span class="spinner"></span>Uploading\u2026';
 
   try{
-    const data = await apiCall('/.netlify/functions/admin-kb', {
+    const data = await apiCall('/api/admin-kb', {
       method: 'POST',
       body: { title, subject, text, filename: file ? file.name : null }
     });
