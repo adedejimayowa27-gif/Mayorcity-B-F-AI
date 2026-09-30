@@ -60,7 +60,7 @@ document.getElementById('setupForm').addEventListener('submit', async (e) => {
   showView('loading');
 
   try{
-    const data = await apiCall('/.netlify/functions/quiz-generate', { topic, count: selectedCount });
+    const data = await apiCall('/api/quiz-generate', { topic, count: selectedCount });
     currentTopic = data.topic || topic;
     currentQuestions = data.questions || [];
     answers = new Array(currentQuestions.length).fill(null);
@@ -144,7 +144,7 @@ document.getElementById('submitQuizBtn').addEventListener('click', async () => {
   submitBtn.disabled = true;
 
   try{
-    const result = await apiCall('/.netlify/functions/quiz-result', { topic: currentTopic, score, total });
+    const result = await apiCall('/api/quiz-result', { topic: currentTopic, score, total });
     document.getElementById('statCurrentStreak').textContent = result.currentStreak;
     document.getElementById('statLongestStreak').textContent = result.longestStreak;
     const streakMsg = document.getElementById('resultStreakMsg');
