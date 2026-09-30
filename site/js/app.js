@@ -666,7 +666,7 @@ function addMsg(role, text, sources, opts){
         (rating === 'up' ? upBtn : downBtn).classList.add('selected');
         thanks.hidden = false;
         const lastQuestion = [...history].reverse().find(m => m.role === 'user');
-        fetch('/.netlify/functions/feedback', {
+        fetch('/api/feedback', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
@@ -978,7 +978,7 @@ async function ask(question, opts){
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
     try{
-      const resp = await fetch("/.netlify/functions/chat", {
+      const resp = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
